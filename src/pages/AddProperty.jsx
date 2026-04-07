@@ -165,6 +165,18 @@ export default function AddProperty() {
         is_occupied: false,
       }));
 
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("verification_status")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.verification_status !== "verified") {
+        setError("You must complete identity verification before listing properties. Go to Verify Identity in your dashboard.");
+        setLoading(false);
+        return;
+      }
+
       const { error: roomError } = await supabase
         .from("property_rooms")
         .insert(roomsToInsert);

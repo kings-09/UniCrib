@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { StatCard, sharedStyles as S } from "../components/DashboardShared";
+import LandlordVerification from "../pages/LandlordVerification";
 
 function LandlordDashboard({ user }) {
   const [properties,   setProperties]   = useState([]);
@@ -122,7 +123,10 @@ function LandlordDashboard({ user }) {
       <aside style={S.sidebar}>
         <div style={S.sidebarLogo}><span style={S.logoIcon}>🏠</span><span style={S.logoText}>UniCrib</span></div>
         <nav style={S.navMenu}>
-          {[{ key: "properties", icon: "🏠", label: "My Properties" }, { key: "requests", icon: "📋", label: "Booking Requests" }].map(({ key, icon, label }) => (
+          {[{ key: "properties", icon: "🏠", label: "My Properties" },
+            { key: "requests", icon: "📋", label: "Booking Requests" },
+            { key: "verify", icon: "🛡", label: "Verify Identity" }
+          ].map(({ key, icon, label }) => (
             <button key={key} style={activeTab === key ? S.navItemActive : S.navItem} onClick={() => setActiveTab(key)}>
               <span style={S.navIcon}>{icon}</span>{label}
             </button>
@@ -130,6 +134,7 @@ function LandlordDashboard({ user }) {
           <button style={{ ...S.navItem, marginTop: "8px", border: "2px solid #7c3aed", color: "#7c3aed", borderRadius: "10px", fontWeight: 700 }} onClick={() => navigate("/add-property")}>
             <span style={S.navIcon}>➕</span> Add Property
           </button>
+          
         </nav>
         <button style={S.logoutBtn} onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>🚪 Logout</button>
       </aside>
@@ -192,6 +197,10 @@ function LandlordDashboard({ user }) {
                 ))}
               </div>
             </div>
+          )}
+
+          {activeTab === "verify" && (
+            <LandlordVerification onVerified={(status) => console.log("Status:", status)} />
           )}
 
           {activeTab === "requests" && (

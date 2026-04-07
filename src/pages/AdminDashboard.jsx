@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { StatCard, sharedStyles as S } from "../components/DashboardShared";
+import { VerificationReview } from "../pages/LandlordVerification";
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -23,8 +24,9 @@ function AdminDashboard() {
   const [createLoading, setCreateLoading] = useState(false);
   const [createError,   setCreateError]   = useState("");
   const [createSuccess, setCreateSuccess] = useState("");
+  const [pendingVerifications, setPendingVerifications] = useState([]);
 
-  useEffect(() => { fetchAll(); fetchAdminStatus(); fetchAdmins(); }, []);
+  useEffect(() => { fetchAll(); fetchAdminStatus(); fetchAdmins(); fetchPendingVerifications()}, []);
 
   const fetchAll = async () => {
     const { data: pend } = await supabase.from("properties").select("*").eq("is_approved", false).is("rejection_reason", null);
@@ -42,6 +44,15 @@ function AdminDashboard() {
   const fetchAdmins = async () => {
     const { data } = await supabase.from("user_profiles").select("id, full_name, role_id, is_super_admin").eq("role_id", 3);
     setAdmins(data || []);
+  };
+
+  const fetchPendingVerifications = async () => {
+    const { data } = await supabase
+      .from("landlord_verifications")
+      .select("*")
+      .eq("status", "pending");
+
+    setPendingVerifications(data || []);
   };
 
   const openReview = async (property) => {
@@ -96,6 +107,7 @@ function AdminDashboard() {
   const tabs = [
     { key: "pending",  label: "Pending Review", count: pending.length  },
     { key: "approved", label: "Approved",        count: approved.length },
+    { key: "verifications", label: "Verify Landlords", count: pendingVerifications.length },
     ...(isSuperAdmin ? [{ key: "admins", label: "Manage Admins", count: admins.length }] : []),
   ];
 
@@ -107,7 +119,9 @@ function AdminDashboard() {
         <nav style={S.navMenu}>
           {tabs.map(t => (
             <button key={t.key} style={activeTab === t.key ? S.navItemActive : S.navItem} onClick={() => { setActiveTab(t.key); setSelected(null); }}>
-              <span style={S.navIcon}>{t.key === "pending" ? "⏳" : t.key === "approved" ? "✅" : "👑"}</span>
+              <span style={S.navIcon}>
+                {t.key === "pending" ? "⏳" : t.key === "approved" ? "✅" : "👑"},
+              </span>
               {t.label}
               {t.count > 0 && <span style={t.key === "pending" ? S.countBadgeOrange : S.countBadgeGreen}>{t.count}</span>}
             </button>
@@ -269,6 +283,8 @@ function AdminDashboard() {
             )}
           </div>
         )}
+
+        {activeTab === "verifications" && <VerificationReview />}
 
         {activeTab === "admins" && isSuperAdmin && (
           <div style={{ padding: "0 32px 32px" }}>
