@@ -1,13 +1,109 @@
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f8f7ff;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Mobile: ≤640px ── */
+@media (max-width: 640px) {
+  /* Sidebar becomes a top nav bar */
+  .unicrib-sidebar {
+    width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+    height: auto !important; position: relative !important;
+    border-right: none !important; border-bottom: 1px solid #e5e7eb !important;
+    padding: 10px 12px !important; flex-direction: row !important;
+    align-items: center !important; flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+  .unicrib-nav-menu {
+    flex-direction: row !important; overflow-x: auto !important;
+    flex: 1 !important; gap: 2px !important; min-width: 0 !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .unicrib-sidebar-profile, .unicrib-quick-stats { display: none !important; }
+  .unicrib-nav-item, .unicrib-nav-item-active {
+    font-size: 11px !important; padding: 7px 9px !important; white-space: nowrap !important;
+  }
+  .unicrib-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    padding: 12px !important; gap: 10px !important;
+  }
+  .unicrib-header-banner {
+    padding: 16px !important; flex-direction: column !important; gap: 10px !important;
+  }
+  .unicrib-greeting-title { font-size: 18px !important; }
+  .unicrib-greeting-sub   { font-size: 12px !important; }
+  .unicrib-tab-bar { padding: 0 8px !important; overflow-x: auto !important; }
+  .unicrib-tab, .unicrib-tab-active {
+    padding: 11px 10px !important; font-size: 12px !important; white-space: nowrap !important;
+  }
+  .unicrib-section { padding: 0 12px 16px !important; }
+  .unicrib-property-grid { grid-template-columns: 1fr !important; }
+  .unicrib-filter-bar { padding: 12px !important; flex-direction: column !important; }
+  .unicrib-filter-bar input, .unicrib-filter-bar select { width: 100% !important; }
+  .unicrib-modal {
+    width: 100% !important; max-width: 100% !important;
+    height: 100dvh !important; max-height: 100dvh !important;
+    border-radius: 0 !important; padding: 16px !important; top: 0 !important;
+  }
+  .unicrib-room-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  /* Auth pages */
+  .auth-left-panel { display: none !important; }
+  .auth-right-panel { padding: 28px 16px !important; }
+  .auth-row2 { grid-template-columns: 1fr !important; }
+  .auth-role-row { grid-template-columns: 1fr !important; }
+  /* Home */
+  .home-hero-title { font-size: clamp(28px,9vw,40px) !important; }
+  .home-hero-buttons { flex-direction: column !important; align-items: stretch !important; }
+  .home-features-grid, .home-listings-grid, .home-steps-grid { grid-template-columns: 1fr !important; }
+  .home-stats { gap: 20px !important; }
+  /* Add property */
+  .add-property-layout { flex-direction: column !important; padding: 14px !important; gap: 16px !important; }
+  .add-property-sidebar { width: 100% !important; position: static !important; }
+  .add-property-row2, .add-property-row3 { grid-template-columns: 1fr !important; }
+  /* Admin */
+  .admin-content-area { flex-direction: column !important; padding: 0 12px 16px !important; }
+  .admin-list-panel { width: 100% !important; min-width: 0 !important; margin-right: 0 !important; border-right: none !important; border-bottom: 1px solid #e5e7eb !important; }
+  .admin-docs-grid { grid-template-columns: 1fr !important; }
+  /* Verification */
+  .verify-progress-label { display: none !important; }
+  .vr-layout { flex-direction: column !important; }
+  .vr-list { width: 100% !important; min-width: 0 !important; border-right: none !important; border-bottom: 1px solid #e5e7eb !important; }
+  /* Roommates */
+  .roommate-match-grid { grid-template-columns: 1fr !important; }
+  .roommate-browse-grid { grid-template-columns: 1fr !important; }
+  /* Profile */
+  .profile-hero-inner { flex-direction: column !important; }
+  .profile-completion-wrap { width: 100% !important; min-width: 0 !important; }
+  .profile-row2 { grid-template-columns: 1fr !important; }
+  /* Signup steps */
+  .signup-step-row { overflow-x: auto !important; }
 }
+
+/* ── Tablet: 641–1024px ── */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .unicrib-sidebar { width: 180px !important; min-width: 180px !important; }
+  .unicrib-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important; padding: 16px 20px !important;
+  }
+  .unicrib-section { padding: 0 20px 20px !important; }
+  .unicrib-header-banner { padding: 20px 20px !important; }
+  .unicrib-property-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .auth-left-panel { width: 280px !important; min-width: 240px !important; }
+  .home-features-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .home-listings-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .add-property-sidebar { width: 200px !important; }
+  .admin-list-panel { width: 220px !important; min-width: 200px !important; }
+  .admin-docs-grid { grid-template-columns: 1fr 1fr !important; }
+  .roommate-match-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .vr-list { width: 220px !important; min-width: 180px !important; }
+}
+
+/* ── Ensure videos render on iOS ── */
+video { -webkit-transform: translateZ(0); }
