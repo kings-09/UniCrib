@@ -48,7 +48,7 @@ export default function Login() {
       return;
     }
 
-    const { data: profileData, error: profileError } = await supabase
+    const { error: profileError } = await supabase
       .from("user_profiles")
       .select("role_id")
       .eq("id", user.id)
