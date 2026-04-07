@@ -292,7 +292,7 @@ function AdminDashboard() {
             <div style={S.adminSearchCard}>
               <p style={S.adminSearchTitle}>➕ Create New Admin Account</p>
               <p style={S.adminSearchSub}>Creates a brand new UniCrib admin account. The person can log in immediately.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px", width: "100%" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <label style={S.fieldLabel}>Full Name</label>
                   <input style={S.fieldInput} placeholder="e.g. Chipo Ndlovu" value={newAdminName} onChange={e => setNewAdminName(e.target.value)} />
@@ -318,14 +318,14 @@ function AdminDashboard() {
             {admins.length === 0 && <p style={{ color: "#9ca3af" }}>No admins found.</p>}
             {admins.map(a => (
               <div key={a.id} style={S.adminRow}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", minWidth: 0 }}>
                   <div style={S.adminAvatar}>{a.full_name?.charAt(0)?.toUpperCase() || "?"}</div>
                   <div>
                     <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "15px", color: "#111827" }}>{a.full_name || "No name set"}</p>
                     <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af" }}>{a.is_super_admin ? "⭐ Super Admin" : "Admin"}</p>
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                   {a.is_super_admin ? <span style={S.superBadge}>⭐ Super Admin</span> : <button style={S.removeAdminBtn} onClick={() => removeAdmin(a.id)}>Remove</button>}
                 </div>
               </div>

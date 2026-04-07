@@ -15,147 +15,1230 @@ export function EmptyState({ icon, text }) {
    STYLES
 ───────────────────────────────────────────────────────────── */
 export const sharedStyles = {
-  pageWrap: { display: "flex", minHeight: "100vh", fontFamily: "'Segoe UI', sans-serif", backgroundColor: "#f8f7ff" },
-  sidebar: { width: "220px", minWidth: "220px", background: "white", display: "flex", flexDirection: "column", padding: "24px 16px", borderRight: "1px solid #e5e7eb", position: "sticky", top: 0, height: "100vh", boxSizing: "border-box" },
-  sidebarLogo: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "28px" },
-  logoIcon: { fontSize: "24px" }, logoText: { fontSize: "20px", fontWeight: 800, color: "#7c3aed" },
-  sidebarProfile: { display: "flex", alignItems: "center", gap: "12px", marginBottom: "28px", padding: "12px", background: "#f5f3ff", borderRadius: "12px" },
-  avatarCircle: { width: "40px", height: "40px", borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "16px", flexShrink: 0 },
+  pageWrap: {
+    display: "flex",
+    minHeight: "100vh",
+    fontFamily: "'Segoe UI', sans-serif",
+    backgroundColor: "#f8f7ff",
+    flexWrap: "wrap",
+  },
+
+  sidebar: {
+    width: "100%",
+    maxWidth: "220px",
+    minWidth: "220px",
+    background: "white",
+    display: "flex",
+    flexDirection: "column",
+    padding: "24px 16px",
+    borderRight: "1px solid #e5e7eb",
+    position: "sticky",
+    top: 0,
+    height: "100vh",
+    boxSizing: "border-box",
+  },
+
+  sidebarLogo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "28px",
+  },
+
+  logoIcon: { fontSize: "24px" },
+  logoText: { fontSize: "20px", fontWeight: 800, color: "#7c3aed" },
+
+  sidebarProfile: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    marginBottom: "28px",
+    padding: "12px",
+    background: "#f5f3ff",
+    borderRadius: "12px",
+  },
+
+  avatarCircle: {
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 700,
+    fontSize: "16px",
+    flexShrink: 0,
+  },
+
   profileName: { margin: 0, fontWeight: 700, fontSize: "14px", color: "#111827" },
   profileSub: { margin: 0, fontSize: "12px", color: "#6b7280" },
-  navMenu: { display: "flex", flexDirection: "column", gap: "4px", flex: 1 },
-  navItem: { display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", border: "none", background: "transparent", borderRadius: "10px", cursor: "pointer", fontSize: "14px", color: "#374151", textAlign: "left", fontWeight: 500 },
-  navItemActive: { display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", borderRadius: "10px", cursor: "pointer", fontSize: "14px", color: "white", textAlign: "left", fontWeight: 600 },
+
+  navMenu: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    flex: 1,
+  },
+
+  navItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 12px",
+    border: "none",
+    background: "transparent",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "#374151",
+    textAlign: "left",
+    fontWeight: 500,
+  },
+
+  navItemActive: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "10px 12px",
+    border: "none",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "white",
+    textAlign: "left",
+    fontWeight: 600,
+  },
+
   navIcon: { fontSize: "16px" },
-  quickStats: { marginTop: "auto", marginBottom: "16px", paddingTop: "16px", borderTop: "1px solid #f3f4f6" },
-  quickStatsTitle: { fontSize: "11px", color: "#9ca3af", fontWeight: 700, margin: "0 0 10px", letterSpacing: "0.08em" },
-  quickStatRow: { display: "flex", alignItems: "center", gap: "8px" },
-  quickStatIcon: { fontSize: "18px" }, quickStatText: { fontSize: "13px", color: "#6b7280" },
-  logoutBtn: { background: "#fef2f2", border: "none", borderRadius: "10px", padding: "10px 12px", cursor: "pointer", color: "#dc2626", fontWeight: 600, fontSize: "14px", display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" },
-  main: { flex: 1, overflowY: "auto" },
-  headerBanner: { background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)", padding: "28px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" },
-  greetingTitle: { margin: "0 0 4px", fontSize: "24px", fontWeight: 800, color: "white" },
-  greetingSub: { margin: 0, color: "rgba(255,255,255,0.8)", fontSize: "14px" },
-  headerActions: { display: "flex", gap: "10px" },
-  headerOutlineBtn: { padding: "10px 16px", borderRadius: "10px", border: "2px solid rgba(255,255,255,0.6)", background: "transparent", color: "white", cursor: "pointer", fontWeight: 600, fontSize: "14px" },
-  headerPrimaryBtn: { padding: "10px 16px", borderRadius: "10px", border: "none", background: "white", color: "#7c3aed", cursor: "pointer", fontWeight: 700, fontSize: "14px" },
-  tabBar: { display: "flex", background: "white", borderBottom: "1px solid #e5e7eb", padding: "0 32px" },
-  tab: { padding: "14px 20px", border: "none", background: "transparent", cursor: "pointer", fontSize: "14px", color: "#6b7280", fontWeight: 500, borderBottom: "2px solid transparent" },
-  tabActive: { padding: "14px 20px", border: "none", background: "transparent", cursor: "pointer", fontSize: "14px", color: "#7c3aed", fontWeight: 700, borderBottom: "2px solid #7c3aed" },
+
+  quickStats: {
+    marginTop: "auto",
+    marginBottom: "16px",
+    paddingTop: "16px",
+    borderTop: "1px solid #f3f4f6",
+  },
+
+  quickStatsTitle: {
+    fontSize: "11px",
+    color: "#9ca3af",
+    fontWeight: 700,
+    margin: "0 0 10px",
+    letterSpacing: "0.08em",
+  },
+
+  quickStatRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  },
+
+  quickStatIcon: { fontSize: "18px" },
+  quickStatText: { fontSize: "13px", color: "#6b7280" },
+
+  logoutBtn: {
+    background: "#fef2f2",
+    border: "none",
+    borderRadius: "10px",
+    padding: "10px 12px",
+    cursor: "pointer",
+    color: "#dc2626",
+    fontWeight: 600,
+    fontSize: "14px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    marginTop: "8px",
+  },
+
+  main: {
+    flex: 1,
+    overflowY: "auto",
+    minWidth: 0,
+  },
+
+  headerBanner: {
+    background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
+    padding: "20px 16px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "12px",
+  },
+
+  greetingTitle: {
+    margin: "0 0 4px",
+    fontSize: "24px",
+    fontWeight: 800,
+    color: "white",
+  },
+
+  greetingSub: {
+    margin: 0,
+    color: "rgba(255,255,255,0.8)",
+    fontSize: "14px",
+  },
+
+  headerActions: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    width: "100%",
+  },
+
+  headerOutlineBtn: {
+    padding: "10px 16px",
+    borderRadius: "10px",
+    border: "2px solid rgba(255,255,255,0.6)",
+    background: "transparent",
+    color: "white",
+    cursor: "pointer",
+    fontWeight: 600,
+    fontSize: "14px",
+  },
+
+  headerPrimaryBtn: {
+    padding: "10px 16px",
+    borderRadius: "10px",
+    border: "none",
+    background: "white",
+    color: "#7c3aed",
+    cursor: "pointer",
+    fontWeight: 700,
+    fontSize: "14px",
+  },
+
+  tabBar: {
+    display: "flex",
+    background: "white",
+    borderBottom: "1px solid #e5e7eb",
+    padding: "0 16px",
+    overflowX: "auto",
+    flexWrap: "nowrap",
+  },
+
+  tab: {
+    padding: "14px 20px",
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "#6b7280",
+    fontWeight: 500,
+    borderBottom: "2px solid transparent",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  },
+
+  tabActive: {
+    padding: "14px 20px",
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    fontSize: "14px",
+    color: "#7c3aed",
+    fontWeight: 700,
+    borderBottom: "2px solid #7c3aed",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
+  },
+
   tabContent: { padding: "0" },
-  statsGrid: { display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "16px", padding: "24px 32px" },
-  statCard: { display: "flex", alignItems: "center", gap: "14px", borderRadius: "14px", padding: "18px 20px", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" },
-  statIcon: { fontSize: "28px" }, statLabel: { margin: "0 0 2px", fontSize: "13px", color: "#6b7280", fontWeight: 500 }, statValue: { margin: 0, fontSize: "22px", fontWeight: 800, color: "#111827" },
-  section: { padding: "0 32px 24px" },
-  sectionHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
-  sectionTitle: { fontSize: "18px", fontWeight: 700, color: "#111827", margin: "0 0 16px" },
-  viewAllBtn: { background: "none", border: "none", color: "#7c3aed", fontWeight: 600, cursor: "pointer", fontSize: "14px" },
-  propertyGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "18px" },
-  card: { background: "white", borderRadius: "14px", boxShadow: "0 4px 12px rgba(0,0,0,0.06)", overflow: "hidden", cursor: "pointer" },
-  imgWrap: { position: "relative", width: "100%", height: "165px", overflow: "hidden" },
-  cardImg: { width: "100%", height: "100%", objectFit: "cover" },
-  overlayBadgeGreen: { position: "absolute", top: "10px", right: "10px", background: "#16a34a", color: "white", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700 },
-  overlayBadgeRed: { position: "absolute", top: "10px", right: "10px", background: "#dc2626", color: "white", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700 },
-  filterBar: { display: "flex", gap: "10px", flexWrap: "wrap", padding: "20px 32px" },
-  filterInput: { padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", outline: "none", minWidth: "130px", width: "auto" },
-  filterSelect: { padding: "10px 14px", borderRadius: "10px", border: "1px solid #e5e7eb", fontSize: "14px", outline: "none", background: "white" },
-  proximityBadge: { margin: "0 32px 16px", background: "#e0f2fe", color: "#0369a1", padding: "10px 16px", borderRadius: "10px", fontWeight: 600, fontSize: "14px" },
-  requestCard: { background: "white", borderRadius: "12px", padding: "16px 20px", marginBottom: "10px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" },
+
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "16px",
+    padding: "20px 16px",
+  },
+
+  statCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    borderRadius: "14px",
+    padding: "18px 20px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+  },
+
+  statIcon: { fontSize: "28px" },
+  statLabel: { margin: "0 0 2px", fontSize: "13px", color: "#6b7280", fontWeight: 500 },
+  statValue: { margin: 0, fontSize: "22px", fontWeight: 800, color: "#111827" },
+
+  section: { padding: "0 16px 24px" },
+
+  sectionHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "16px",
+    gap: "12px",
+    flexWrap: "wrap",
+  },
+
+  sectionTitle: {
+    fontSize: "18px",
+    fontWeight: 700,
+    color: "#111827",
+    margin: "0 0 16px",
+  },
+
+  viewAllBtn: {
+    background: "none",
+    border: "none",
+    color: "#7c3aed",
+    fontWeight: 600,
+    cursor: "pointer",
+    fontSize: "14px",
+  },
+
+  propertyGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+    gap: "18px",
+  },
+
+  card: {
+    background: "white",
+    borderRadius: "14px",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+    overflow: "hidden",
+    cursor: "pointer",
+    minWidth: 0,
+  },
+
+  imgWrap: {
+    position: "relative",
+    width: "100%",
+    height: "165px",
+    overflow: "hidden",
+  },
+
+  cardImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  overlayBadgeGreen: {
+    position: "absolute",
+    top: "10px",
+    right: "10px",
+    background: "#16a34a",
+    color: "white",
+    padding: "4px 10px",
+    borderRadius: "20px",
+    fontSize: "11px",
+    fontWeight: 700,
+  },
+
+  overlayBadgeRed: {
+    position: "absolute",
+    top: "10px",
+    right: "10px",
+    background: "#dc2626",
+    color: "white",
+    padding: "4px 10px",
+    borderRadius: "20px",
+    fontSize: "11px",
+    fontWeight: 700,
+  },
+
+  filterBar: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    padding: "20px 16px",
+  },
+
+  filterInput: {
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: "1px solid #e5e7eb",
+    fontSize: "14px",
+    outline: "none",
+    minWidth: "130px",
+    width: "100%",
+    flex: "1 1 180px",
+    boxSizing: "border-box",
+  },
+
+  filterSelect: {
+    padding: "10px 14px",
+    borderRadius: "10px",
+    border: "1px solid #e5e7eb",
+    fontSize: "14px",
+    outline: "none",
+    background: "white",
+    width: "100%",
+    flex: "1 1 180px",
+    boxSizing: "border-box",
+  },
+
+  proximityBadge: {
+    margin: "0 16px 16px",
+    background: "#e0f2fe",
+    color: "#0369a1",
+    padding: "10px 16px",
+    borderRadius: "10px",
+    fontWeight: 600,
+    fontSize: "14px",
+  },
+
+  requestCard: {
+    background: "white",
+    borderRadius: "12px",
+    padding: "16px 20px",
+    marginBottom: "10px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "12px",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+  },
+
   requestProp: { margin: "0 0 6px", fontWeight: 700, color: "#111827" },
-  badgeGreen: { background: "#dcfce7", color: "#16a34a", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 },
-  badgeRed: { background: "#fee2e2", color: "#dc2626", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 },
-  badgeYellow: { background: "#fef3c7", color: "#d97706", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 },
-  primaryBtn: { padding: "10px 20px", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "14px", width: "100%" },
-  disabledBtn: { padding: "10px 20px", background: "#d1d5db", color: "white", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "not-allowed", fontSize: "14px", width: "100%" },
-  payBtn: { padding: "8px 16px", background: "#064e3b", color: "white", border: "none", borderRadius: "8px", fontWeight: 700, cursor: "pointer", fontSize: "13px" },
-  editBtn: { flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: "#ede9fe", color: "#7c3aed", fontWeight: 700, cursor: "pointer", fontSize: "13px" },
-  deleteBtn: { flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: "#fee2e2", color: "#dc2626", fontWeight: 700, cursor: "pointer", fontSize: "13px" },
-  toggleBtn: { flex: 1, padding: "8px", borderRadius: "8px", border: "none", background: "#dcfce7", color: "#16a34a", fontWeight: 700, cursor: "pointer", fontSize: "13px" },
-  acceptBtn: { padding: "8px 16px", background: "#16a34a", color: "white", border: "none", borderRadius: "8px", fontWeight: 700, cursor: "pointer" },
-  rejectBtn: { padding: "8px 16px", background: "#dc2626", color: "white", border: "none", borderRadius: "8px", fontWeight: 700, cursor: "pointer" },
-  actionRow: { display: "flex", gap: "8px" },
-  overlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 },
-  modal: { background: "white", borderRadius: "20px", width: "90%", maxWidth: "600px", maxHeight: "90vh", overflowY: "auto", padding: "28px", position: "relative" },
-  modalImgWrap: { position: "relative", marginBottom: "20px" },
-  modalImg: { width: "100%", height: "260px", objectFit: "cover", borderRadius: "14px" },
-  closeBtn: { position: "absolute", top: "16px", right: "16px", background: "#f3f4f6", border: "none", width: "32px", height: "32px", borderRadius: "50%", cursor: "pointer", fontSize: "16px", zIndex: 10 },
-  arrowL: { position: "absolute", top: "50%", left: "12px", transform: "translateY(-50%)", background: "rgba(0,0,0,0.55)", color: "white", border: "none", borderRadius: "50%", width: "36px", height: "36px", cursor: "pointer", zIndex: 5 },
-  arrowR: { position: "absolute", top: "50%", right: "12px", transform: "translateY(-50%)", background: "rgba(0,0,0,0.55)", color: "white", border: "none", borderRadius: "50%", width: "36px", height: "36px", cursor: "pointer", zIndex: 5 },
-  dots: { position: "absolute", bottom: "10px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "6px" },
-  dot: { width: "8px", height: "8px", borderRadius: "50%", background: "white" },
-  mapBtn: { padding: "10px 16px", background: "#10b981", color: "white", borderRadius: "10px", textDecoration: "none", fontWeight: 700, fontSize: "14px" },
-  dirBtn: { padding: "10px 16px", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", borderRadius: "10px", textDecoration: "none", fontWeight: 700, fontSize: "14px" },
-  textarea: { width: "100%", minHeight: "80px", borderRadius: "10px", border: "1px solid #e5e7eb", padding: "10px", fontSize: "14px", marginTop: "10px", marginBottom: "10px", boxSizing: "border-box", resize: "vertical" },
-  reviewCard: { background: "#f9fafb", borderRadius: "10px", padding: "12px 16px", marginBottom: "8px" },
-  reviewLocked: { background: "#f9fafb", border: "1px dashed #e5e7eb", borderRadius: "12px", padding: "24px", textAlign: "center" },
-  emptyState: { textAlign: "center", padding: "60px 20px" }, emptyIcon: { fontSize: "48px", marginBottom: "12px" },
-  loadingScreen: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", gap: "16px" },
-  spinner: { width: "36px", height: "36px", border: "4px solid #ede9fe", borderTop: "4px solid #7c3aed", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
 
-  roomAvailBadge: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a", padding: "8px 14px", borderRadius: "10px", fontSize: "13px", fontWeight: 700, marginBottom: "14px", display: "inline-block" },
-  roomGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "10px", marginBottom: "16px" },
-  roomBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", padding: "14px 8px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", cursor: "pointer" },
-  roomBtnSelected: { border: "1.5px solid #7c3aed", background: "#faf5ff" },
-  roomBtnOccupied: { background: "#f9fafb", cursor: "not-allowed", opacity: 0.6 },
+  badgeGreen: {
+    background: "#dcfce7",
+    color: "#16a34a",
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
 
-  /* Admin styles */
-  adminBadge: { background: "#ede9fe", color: "#7c3aed", borderRadius: "8px", padding: "6px 12px", fontSize: "13px", fontWeight: 700, marginBottom: "24px" },
-  countBadgeOrange: { marginLeft: "auto", background: "#fef3c7", color: "#d97706", borderRadius: "20px", padding: "2px 8px", fontSize: "12px", fontWeight: 700 },
-  countBadgeGreen:  { marginLeft: "auto", background: "#dcfce7", color: "#16a34a", borderRadius: "20px", padding: "2px 8px", fontSize: "12px", fontWeight: 700 },
-  listPanel: { width: "300px", minWidth: "260px", marginRight: "24px" },
-  panelTitle: { fontSize: "15px", fontWeight: 800, color: "#374151", margin: "0 0 16px" },
-  listItem: { display: "flex", alignItems: "center", gap: "12px", padding: "12px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", cursor: "pointer", marginBottom: "10px" },
-  listItemActive: { border: "1.5px solid #7c3aed", background: "#faf5ff" },
-  listItemImg: { width: "56px", height: "56px", borderRadius: "8px", overflow: "hidden", background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  listThumb: { width: "100%", height: "100%", objectFit: "cover" },
-  listItemTitle: { margin: "0 0 3px", fontSize: "14px", fontWeight: 700, color: "#111827" },
-  listItemSub: { margin: 0, fontSize: "12px", color: "#9ca3af" },
-  badgeOrange: { background: "#fef3c7", color: "#d97706", padding: "3px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: 700, whiteSpace: "nowrap" },
-  reviewPanel: { flex: 1, background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", overflow: "hidden" },
-  reviewHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", borderBottom: "1px solid #e5e7eb" },
-  reviewTitle: { margin: 0, fontSize: "18px", fontWeight: 800, color: "#111827" },
-  closeReviewBtn: { background: "#f3f4f6", border: "none", width: "30px", height: "30px", borderRadius: "50%", cursor: "pointer", fontSize: "14px" },
+  badgeRed: {
+    background: "#fee2e2",
+    color: "#dc2626",
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+
+  badgeYellow: {
+    background: "#fef3c7",
+    color: "#d97706",
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+
+  primaryBtn: {
+    padding: "10px 20px",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "14px",
+    width: "100%",
+  },
+
+  disabledBtn: {
+    padding: "10px 20px",
+    background: "#d1d5db",
+    color: "white",
+    border: "none",
+    borderRadius: "10px",
+    fontWeight: 700,
+    cursor: "not-allowed",
+    fontSize: "14px",
+    width: "100%",
+  },
+
+  payBtn: {
+    padding: "8px 16px",
+    background: "#064e3b",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+
+  editBtn: {
+    flex: 1,
+    padding: "8px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#ede9fe",
+    color: "#7c3aed",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+
+  deleteBtn: {
+    flex: 1,
+    padding: "8px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#fee2e2",
+    color: "#dc2626",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+
+  toggleBtn: {
+    flex: 1,
+    padding: "8px",
+    borderRadius: "8px",
+    border: "none",
+    background: "#dcfce7",
+    color: "#16a34a",
+    fontWeight: 700,
+    cursor: "pointer",
+    fontSize: "13px",
+  },
+
+  acceptBtn: {
+    padding: "8px 16px",
+    background: "#16a34a",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  rejectBtn: {
+    padding: "8px 16px",
+    background: "#dc2626",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  actionRow: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+
+  overlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.6)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
+    padding: "16px",
+    boxSizing: "border-box",
+  },
+
+  modal: {
+    background: "white",
+    borderRadius: "20px",
+    width: "95%",
+    maxWidth: "600px",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    padding: "16px",
+    position: "relative",
+    boxSizing: "border-box",
+  },
+
+  modalImgWrap: {
+    position: "relative",
+    marginBottom: "20px",
+  },
+
+  modalImg: {
+    width: "100%",
+    height: "260px",
+    objectFit: "cover",
+    borderRadius: "14px",
+  },
+
+  closeBtn: {
+    position: "absolute",
+    top: "16px",
+    right: "16px",
+    background: "#f3f4f6",
+    border: "none",
+    width: "32px",
+    height: "32px",
+    borderRadius: "50%",
+    cursor: "pointer",
+    fontSize: "16px",
+    zIndex: 10,
+  },
+
+  arrowL: {
+    position: "absolute",
+    top: "50%",
+    left: "12px",
+    transform: "translateY(-50%)",
+    background: "rgba(0,0,0,0.55)",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    width: "36px",
+    height: "36px",
+    cursor: "pointer",
+    zIndex: 5,
+  },
+
+  arrowR: {
+    position: "absolute",
+    top: "50%",
+    right: "12px",
+    transform: "translateY(-50%)",
+    background: "rgba(0,0,0,0.55)",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    width: "36px",
+    height: "36px",
+    cursor: "pointer",
+    zIndex: 5,
+  },
+
+  dots: {
+    position: "absolute",
+    bottom: "10px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    display: "flex",
+    gap: "6px",
+  },
+
+  dot: {
+    width: "8px",
+    height: "8px",
+    borderRadius: "50%",
+    background: "white",
+  },
+
+  mapBtn: {
+    padding: "10px 16px",
+    background: "#10b981",
+    color: "white",
+    borderRadius: "10px",
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: "14px",
+  },
+
+  dirBtn: {
+    padding: "10px 16px",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+    borderRadius: "10px",
+    textDecoration: "none",
+    fontWeight: 700,
+    fontSize: "14px",
+  },
+
+  textarea: {
+    width: "100%",
+    minHeight: "80px",
+    borderRadius: "10px",
+    border: "1px solid #e5e7eb",
+    padding: "10px",
+    fontSize: "14px",
+    marginTop: "10px",
+    marginBottom: "10px",
+    boxSizing: "border-box",
+    resize: "vertical",
+  },
+
+  reviewCard: {
+    background: "#f9fafb",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    marginBottom: "8px",
+  },
+
+  reviewLocked: {
+    background: "#f9fafb",
+    border: "1px dashed #e5e7eb",
+    borderRadius: "12px",
+    padding: "24px",
+    textAlign: "center",
+  },
+
+  emptyState: { textAlign: "center", padding: "60px 20px" },
+  emptyIcon: { fontSize: "48px", marginBottom: "12px" },
+
+  loadingScreen: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    gap: "16px",
+  },
+
+  spinner: {
+    width: "36px",
+    height: "36px",
+    border: "4px solid #ede9fe",
+    borderTop: "4px solid #7c3aed",
+    borderRadius: "50%",
+    animation: "spin 0.8s linear infinite",
+  },
+
+  roomAvailBadge: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    color: "#16a34a",
+    padding: "8px 14px",
+    borderRadius: "10px",
+    fontSize: "13px",
+    fontWeight: 700,
+    marginBottom: "14px",
+    display: "inline-block",
+  },
+
+  roomGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+    gap: "10px",
+    marginBottom: "16px",
+  },
+
+  roomBtn: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "4px",
+    padding: "14px 8px",
+    borderRadius: "12px",
+    border: "1.5px solid #e5e7eb",
+    background: "white",
+    cursor: "pointer",
+  },
+
+  roomBtnSelected: {
+    border: "1.5px solid #7c3aed",
+    background: "#faf5ff",
+  },
+
+  roomBtnOccupied: {
+    background: "#f9fafb",
+    cursor: "not-allowed",
+    opacity: 0.6,
+  },
+
+  adminBadge: {
+    background: "#ede9fe",
+    color: "#7c3aed",
+    borderRadius: "8px",
+    padding: "6px 12px",
+    fontSize: "13px",
+    fontWeight: 700,
+    marginBottom: "24px",
+  },
+
+  countBadgeOrange: {
+    marginLeft: "auto",
+    background: "#fef3c7",
+    color: "#d97706",
+    borderRadius: "20px",
+    padding: "2px 8px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+
+  countBadgeGreen: {
+    marginLeft: "auto",
+    background: "#dcfce7",
+    color: "#16a34a",
+    borderRadius: "20px",
+    padding: "2px 8px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+
+  listPanel: {
+    flex: "1 1 280px",
+    width: "100%",
+    maxWidth: "300px",
+    minWidth: "240px",
+    marginRight: "0",
+  },
+
+  panelTitle: {
+    fontSize: "15px",
+    fontWeight: 800,
+    color: "#374151",
+    margin: "0 0 16px",
+  },
+
+  listItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px",
+    borderRadius: "12px",
+    border: "1.5px solid #e5e7eb",
+    background: "white",
+    cursor: "pointer",
+    marginBottom: "10px",
+  },
+
+  listItemActive: {
+    border: "1.5px solid #7c3aed",
+    background: "#faf5ff",
+  },
+
+  listItemImg: {
+    width: "56px",
+    height: "56px",
+    borderRadius: "8px",
+    overflow: "hidden",
+    background: "#f3f4f6",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+
+  listThumb: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+  },
+
+  listItemTitle: {
+    margin: "0 0 3px",
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#111827",
+  },
+
+  listItemSub: {
+    margin: 0,
+    fontSize: "12px",
+    color: "#9ca3af",
+  },
+
+  badgeOrange: {
+    background: "#fef3c7",
+    color: "#d97706",
+    padding: "3px 8px",
+    borderRadius: "20px",
+    fontSize: "11px",
+    fontWeight: 700,
+    whiteSpace: "nowrap",
+  },
+
+  reviewPanel: {
+    flex: "2 1 500px",
+    background: "white",
+    borderRadius: "16px",
+    border: "1px solid #e5e7eb",
+    overflow: "hidden",
+    width: "100%",
+    minWidth: 0,
+  },
+
+  reviewHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "20px 24px",
+    borderBottom: "1px solid #e5e7eb",
+  },
+
+  reviewTitle: {
+    margin: 0,
+    fontSize: "18px",
+    fontWeight: 800,
+    color: "#111827",
+  },
+
+  closeReviewBtn: {
+    background: "#f3f4f6",
+    border: "none",
+    width: "30px",
+    height: "30px",
+    borderRadius: "50%",
+    cursor: "pointer",
+    fontSize: "14px",
+  },
+
   gallery: { padding: "20px 24px" },
-  galleryMain: { position: "relative", borderRadius: "12px", overflow: "hidden", marginBottom: "10px" },
-  galleryMainImg: { width: "100%", height: "280px", objectFit: "cover", display: "block" },
-  imgCounter: { position: "absolute", bottom: "10px", right: "12px", background: "rgba(0,0,0,0.6)", color: "white", fontSize: "12px", fontWeight: 700, padding: "3px 10px", borderRadius: "20px" },
-  thumbRow: { display: "flex", gap: "8px", flexWrap: "wrap" },
-  thumb: { width: "64px", height: "52px", objectFit: "cover", borderRadius: "8px", cursor: "pointer", border: "2px solid transparent" },
-  thumbActive: { border: "2px solid #7c3aed" },
-  photoNote: { margin: "10px 0 0", fontSize: "13px", color: "#6b7280" },
-  noPhotos: { margin: "20px 24px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "12px", padding: "24px", textAlign: "center" },
-  row: { display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #f9fafb" },
-  rowLabel: { fontSize: "13px", color: "#9ca3af", fontWeight: 600 },
-  rowValue: { fontSize: "13px", color: "#111827", fontWeight: 600, textAlign: "right", maxWidth: "60%" },
-  descText: { fontSize: "14px", color: "#4b5563", lineHeight: 1.7, margin: 0 },
-  mapLink: { display: "inline-block", marginTop: "10px", color: "#2563eb", fontSize: "13px", fontWeight: 700 },
-  warningNote: { fontSize: "13px", color: "#d97706", fontWeight: 600, margin: "8px 0 0" },
-  amenityChips: { display: "flex", flexWrap: "wrap", gap: "8px" },
-  amenityChip: { background: "#ede9fe", color: "#7c3aed", padding: "5px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: 600 },
-  checkItem: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" },
-  checkIcon: { width: "22px", height: "22px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "11px", fontWeight: 800, flexShrink: 0 },
-  notesArea: { width: "100%", minHeight: "80px", borderRadius: "10px", border: "1.5px solid #e5e7eb", padding: "10px", fontSize: "14px", boxSizing: "border-box", resize: "vertical", fontFamily: "inherit" },
-  actionBox: { padding: "20px 24px", borderTop: "1px solid #e5e7eb", background: "#fafafa" },
-  approveBtn: { flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#16a34a,#15803d)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer" },
-  rejectBox: { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" },
-  rejectBoxTitle: { margin: 0, fontSize: "14px", fontWeight: 800, color: "#374151" },
-  rejectBoxSub: { margin: 0, fontSize: "13px", color: "#6b7280" },
-  rejectReasons: { display: "flex", flexWrap: "wrap", gap: "8px" },
-  reasonChip: { padding: "6px 12px", borderRadius: "20px", border: "1.5px solid #fecaca", background: "white", color: "#374151", fontSize: "13px", cursor: "pointer", fontWeight: 500 },
-  reasonChipActive: { background: "#fecaca", border: "1.5px solid #dc2626", color: "#dc2626", fontWeight: 700 },
-  alreadyApproved: { margin: "20px 24px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "16px", color: "#16a34a", fontWeight: 700, textAlign: "center" },
-  emptyReview: { flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 20px", background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", textAlign: "center" },
-  contentArea: { display: "flex", gap: "0", padding: "0 32px 32px", alignItems: "flex-start" },
-  cancelBtn: { padding: "13px 20px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "15px", cursor: "pointer" },
-  adminSearchCard: { background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "24px", marginBottom: "8px" },
-  adminSearchTitle: { fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 4px" },
-  adminSearchSub: { fontSize: "13px", color: "#6b7280", margin: "0 0 16px" },
-  fieldLabel: { fontSize: "13px", fontWeight: 700, color: "#374151" },
-  fieldInput: { padding: "11px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb", fontSize: "14px", outline: "none", background: "white", color: "#111827", fontFamily: "inherit" },
-  createErrorBox: { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", color: "#dc2626", fontSize: "14px", marginBottom: "12px" },
-  createSuccessBox: { background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px 16px", color: "#16a34a", fontSize: "14px", marginBottom: "12px" },
-  adminRow: { background: "white", borderRadius: "12px", border: "1px solid #e5e7eb", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" },
-  adminAvatar: { width: "44px", height: "44px", borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "18px", flexShrink: 0 },
-  superBadge: { background: "#ede9fe", color: "#7c3aed", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 },
-  removeAdminBtn: { padding: "8px 16px", borderRadius: "10px", border: "none", background: "#fee2e2", color: "#dc2626", fontWeight: 700, fontSize: "13px", cursor: "pointer" },
+
+  galleryMain: {
+    position: "relative",
+    borderRadius: "12px",
+    overflow: "hidden",
+    marginBottom: "10px",
+  },
+
+  galleryMainImg: {
+    width: "100%",
+    height: "280px",
+    objectFit: "cover",
+    display: "block",
+  },
+
+  imgCounter: {
+    position: "absolute",
+    bottom: "10px",
+    right: "12px",
+    background: "rgba(0,0,0,0.6)",
+    color: "white",
+    fontSize: "12px",
+    fontWeight: 700,
+    padding: "3px 10px",
+    borderRadius: "20px",
+  },
+
+  thumbRow: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
+  },
+
+  thumb: {
+    width: "64px",
+    height: "52px",
+    objectFit: "cover",
+    borderRadius: "8px",
+    cursor: "pointer",
+    border: "2px solid transparent",
+  },
+
+  thumbActive: {
+    border: "2px solid #7c3aed",
+  },
+
+  photoNote: {
+    margin: "10px 0 0",
+    fontSize: "13px",
+    color: "#6b7280",
+  },
+
+  noPhotos: {
+    margin: "20px 24px",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "12px",
+    padding: "24px",
+    textAlign: "center",
+  },
+
+  row: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    padding: "6px 0",
+    borderBottom: "1px solid #f9fafb",
+    flexWrap: "wrap",
+  },
+
+  rowLabel: {
+    fontSize: "13px",
+    color: "#9ca3af",
+    fontWeight: 600,
+  },
+
+  rowValue: {
+    fontSize: "13px",
+    color: "#111827",
+    fontWeight: 600,
+    textAlign: "right",
+    maxWidth: "100%",
+    wordBreak: "break-word",
+  },
+
+  descText: {
+    fontSize: "14px",
+    color: "#4b5563",
+    lineHeight: 1.7,
+    margin: 0,
+  },
+
+  mapLink: {
+    display: "inline-block",
+    marginTop: "10px",
+    color: "#2563eb",
+    fontSize: "13px",
+    fontWeight: 700,
+  },
+
+  warningNote: {
+    fontSize: "13px",
+    color: "#d97706",
+    fontWeight: 600,
+    margin: "8px 0 0",
+  },
+
+  amenityChips: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+
+  amenityChip: {
+    background: "#ede9fe",
+    color: "#7c3aed",
+    padding: "5px 12px",
+    borderRadius: "20px",
+    fontSize: "13px",
+    fontWeight: 600,
+  },
+
+  checkItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "8px",
+  },
+
+  checkIcon: {
+    width: "22px",
+    height: "22px",
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "11px",
+    fontWeight: 800,
+    flexShrink: 0,
+  },
+
+  notesArea: {
+    width: "100%",
+    minHeight: "80px",
+    borderRadius: "10px",
+    border: "1.5px solid #e5e7eb",
+    padding: "10px",
+    fontSize: "14px",
+    boxSizing: "border-box",
+    resize: "vertical",
+    fontFamily: "inherit",
+  },
+
+  actionBox: {
+    padding: "20px 24px",
+    borderTop: "1px solid #e5e7eb",
+    background: "#fafafa",
+  },
+
+  approveBtn: {
+    flex: 1,
+    padding: "13px",
+    borderRadius: "12px",
+    border: "none",
+    background: "linear-gradient(135deg,#16a34a,#15803d)",
+    color: "white",
+    fontWeight: 800,
+    fontSize: "15px",
+    cursor: "pointer",
+  },
+
+  rejectBox: {
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "12px",
+    padding: "20px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+  },
+
+  rejectBoxTitle: {
+    margin: 0,
+    fontSize: "14px",
+    fontWeight: 800,
+    color: "#374151",
+  },
+
+  rejectBoxSub: {
+    margin: 0,
+    fontSize: "13px",
+    color: "#6b7280",
+  },
+
+  rejectReasons: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+
+  reasonChip: {
+    padding: "6px 12px",
+    borderRadius: "20px",
+    border: "1.5px solid #fecaca",
+    background: "white",
+    color: "#374151",
+    fontSize: "13px",
+    cursor: "pointer",
+    fontWeight: 500,
+  },
+
+  reasonChipActive: {
+    background: "#fecaca",
+    border: "1.5px solid #dc2626",
+    color: "#dc2626",
+    fontWeight: 700,
+  },
+
+  alreadyApproved: {
+    margin: "20px 24px",
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    borderRadius: "12px",
+    padding: "16px",
+    color: "#16a34a",
+    fontWeight: 700,
+    textAlign: "center",
+  },
+
+  emptyReview: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "80px 20px",
+    background: "white",
+    borderRadius: "16px",
+    border: "1px solid #e5e7eb",
+    textAlign: "center",
+    width: "100%",
+  },
+
+  contentArea: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "16px",
+    padding: "0 16px 32px",
+    alignItems: "flex-start",
+  },
+
+  cancelBtn: {
+    padding: "13px 20px",
+    borderRadius: "12px",
+    border: "1.5px solid #e5e7eb",
+    background: "white",
+    color: "#374151",
+    fontWeight: 700,
+    fontSize: "15px",
+    cursor: "pointer",
+  },
+
+  adminSearchCard: {
+    background: "white",
+    borderRadius: "16px",
+    border: "1px solid #e5e7eb",
+    padding: "24px",
+    marginBottom: "8px",
+  },
+
+  adminSearchTitle: {
+    fontSize: "16px",
+    fontWeight: 800,
+    color: "#111827",
+    margin: "0 0 4px",
+  },
+
+  adminSearchSub: {
+    fontSize: "13px",
+    color: "#6b7280",
+    margin: "0 0 16px",
+  },
+
+  fieldLabel: {
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#374151",
+  },
+
+  fieldInput: {
+    padding: "11px 14px",
+    borderRadius: "10px",
+    border: "1.5px solid #e5e7eb",
+    fontSize: "14px",
+    outline: "none",
+    background: "white",
+    color: "#111827",
+    fontFamily: "inherit",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+
+  createErrorBox: {
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    color: "#dc2626",
+    fontSize: "14px",
+    marginBottom: "12px",
+  },
+
+  createSuccessBox: {
+    background: "#f0fdf4",
+    border: "1px solid #bbf7d0",
+    borderRadius: "10px",
+    padding: "12px 16px",
+    color: "#16a34a",
+    fontSize: "14px",
+    marginBottom: "12px",
+  },
+
+  adminRow: {
+    background: "white",
+    borderRadius: "12px",
+    border: "1px solid #e5e7eb",
+    padding: "14px 18px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginBottom: "10px",
+  },
+
+  adminAvatar: {
+    width: "44px",
+    height: "44px",
+    borderRadius: "50%",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 700,
+    fontSize: "18px",
+    flexShrink: 0,
+  },
+
+  superBadge: {
+    background: "#ede9fe",
+    color: "#7c3aed",
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+
+  removeAdminBtn: {
+    padding: "8px 16px",
+    borderRadius: "10px",
+    border: "none",
+    background: "#fee2e2",
+    color: "#dc2626",
+    fontWeight: 700,
+    fontSize: "13px",
+    cursor: "pointer",
+  },
 };

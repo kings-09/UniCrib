@@ -468,96 +468,326 @@ function Field({ label, children }) {
 
 /* ── styles ── */
 const S = {
-  page: { minHeight: "100vh", background: "#f8f7ff", fontFamily: "'Segoe UI', sans-serif", display: "flex", flexDirection: "column" },
+  page: {
+    minHeight: "100vh",
+    background: "#f8f7ff",
+    fontFamily: "'Segoe UI', sans-serif",
+    display: "flex",
+    flexDirection: "column",
+  },
 
-  topBar: { background: "white", borderBottom: "1px solid #e5e7eb", padding: "0 32px", height: "56px", display: "flex", alignItems: "center", justifyContent: "space-between" },
-  backLink: { background: "none", border: "none", color: "#7c3aed", fontWeight: 700, fontSize: "14px", cursor: "pointer" },
-  topBarLogo: { fontSize: "18px", fontWeight: 900, color: "#7c3aed" },
+  topBar: {
+    background: "white",
+    borderBottom: "1px solid #e5e7eb",
+    padding: "0 16px",
+    height: "56px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+  },
 
-  layout: { display: "flex", flex: 1, maxWidth: "1100px", margin: "0 auto", width: "100%", padding: "32px 24px", gap: "32px", alignItems: "flex-start" },
+  backLink: {
+    background: "none",
+    border: "none",
+    color: "#7c3aed",
+    fontWeight: 700,
+    fontSize: "14px",
+    cursor: "pointer",
+  },
 
-  /* sidebar */
-  sidebar: { width: "260px", minWidth: "220px", position: "sticky", top: "24px" },
-  sidebarTitle: { fontSize: "20px", fontWeight: 900, color: "#111827", margin: "0 0 6px" },
-  sidebarSub: { fontSize: "13px", color: "#6b7280", lineHeight: 1.6, margin: "0 0 28px" },
-  stepList: { display: "flex", flexDirection: "column", gap: "20px", marginBottom: "28px" },
-  stepRow: { display: "flex", alignItems: "flex-start", gap: "14px" },
-  stepCircle: { width: "28px", height: "28px", borderRadius: "50%", background: "#e5e7eb", color: "#9ca3af", fontSize: "12px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: "2px" },
-  stepActive: { background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" },
-  stepDone: { background: "#7c3aed", color: "white" },
-  stepLabel: { margin: "0 0 2px", fontSize: "14px", fontWeight: 700, color: "#374151" },
-  stepHint: { margin: 0, fontSize: "12px", color: "#9ca3af" },
-  sidebarTip: { background: "#faf5ff", border: "1px solid #ede9fe", borderRadius: "12px", padding: "16px" },
-  tipTitle: { margin: "0 0 10px", fontSize: "13px", fontWeight: 800, color: "#7c3aed" },
-  tipList: { margin: 0, paddingLeft: "18px", fontSize: "13px", color: "#6b7280", lineHeight: 2 },
+  topBarLogo: {
+    fontSize: "18px",
+    fontWeight: 900,
+    color: "#7c3aed",
+  },
 
-  /* main form card */
-  main: { flex: 1 },
-  formCard: { background: "white", borderRadius: "20px", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", overflow: "hidden" },
-  formCardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "24px 28px 0" },
-  formCardTitle: { margin: 0, fontSize: "20px", fontWeight: 900, color: "#111827" },
-  stepBadge: { background: "#ede9fe", color: "#7c3aed", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: 700 },
-  progressBg: { height: "4px", background: "#f3f4f6", margin: "16px 0 0" },
-  progressFill: { height: "100%", background: "linear-gradient(90deg,#7c3aed,#4f46e5)", transition: "width 0.4s ease", borderRadius: "0 2px 2px 0" },
+  layout: {
+    display: "flex",
+    flexWrap: "wrap",
+    flex: 1,
+    maxWidth: "1100px",
+    margin: "0 auto",
+    width: "100%",
+    padding: "24px 16px",
+    gap: "20px",
+    alignItems: "flex-start",
+  },
 
-  fields: { padding: "24px 28px", display: "flex", flexDirection: "column", gap: "22px" },
-  label: { fontSize: "13px", fontWeight: 700, color: "#374151" },
-  input: { padding: "11px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb", fontSize: "14px", outline: "none", background: "white", color: "#111827", width: "100%", boxSizing: "border-box", fontFamily: "inherit" },
-  row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" },
+  sidebar: {
+    flex: "1 1 260px",
+    width: "100%",
+    maxWidth: "260px",
+    minWidth: "220px",
+    position: "sticky",
+    top: "16px",
+  },
 
-  /* type selector */
-  typeGrid: { display: "flex", flexWrap: "wrap", gap: "8px" },
-  typeBtn: { padding: "8px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", fontSize: "13px", fontWeight: 600, color: "#374151", cursor: "pointer" },
-  typeBtnActive: { border: "1.5px solid #7c3aed", background: "#faf5ff", color: "#7c3aed" },
+  sidebarTitle: {
+    fontSize: "20px",
+    fontWeight: 900,
+    color: "#111827",
+    margin: "0 0 6px",
+  },
 
-  /* price */
-  priceWrap: { position: "relative" },
-  priceDollar: { position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "#9ca3af", fontWeight: 700, fontSize: "14px" },
+  sidebarSub: {
+    fontSize: "13px",
+    color: "#6b7280",
+    lineHeight: 1.6,
+    margin: "0 0 28px",
+  },
 
-  /* occupants */
-  occupantRow: { display: "flex", gap: "8px" },
-  occupantBtn: { width: "40px", height: "40px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", fontSize: "15px", fontWeight: 700, color: "#374151", cursor: "pointer" },
-  occupantBtnActive: { border: "1.5px solid #7c3aed", background: "#faf5ff", color: "#7c3aed" },
+  stepList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+    marginBottom: "28px",
+  },
 
-  /* amenities */
-  amenitiesHint: { fontSize: "14px", color: "#6b7280", margin: 0 },
-  amenitiesGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: "10px" },
-  amenityBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", padding: "14px 8px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", cursor: "pointer", position: "relative" },
-  amenityBtnOn: { border: "1.5px solid #ede9fe", background: "#faf5ff" },
-  amenityCheck: { position: "absolute", top: "6px", right: "8px", fontSize: "11px", color: "#7c3aed", fontWeight: 800 },
-  amenitiesCount: { fontSize: "13px", color: "#7c3aed", fontWeight: 700, margin: 0 },
+  stepRow: {
+    display: "flex",
+    alignItems: "flex-start",
+    gap: "14px",
+  },
 
-  /* location */
-  addressRow: { display: "flex", gap: "10px" },
-  findBtn: { padding: "11px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer", whiteSpace: "nowrap" },
-  mapHint: { fontSize: "12px", color: "#9ca3af", margin: "4px 0 0" },
-  mapWrap: { borderRadius: "12px", overflow: "hidden", border: "1.5px solid #e5e7eb" },
-  pinConfirm: { background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#16a34a", fontSize: "13px", fontWeight: 600, padding: "10px 14px" },
+  stepCircle: {
+    width: "28px",
+    height: "28px",
+    borderRadius: "50%",
+    background: "#e5e7eb",
+    color: "#9ca3af",
+    fontSize: "12px",
+    fontWeight: 700,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    marginTop: "2px",
+  },
 
-  /* image upload */
-  uploadZone: { display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", padding: "28px", border: "2px dashed #e5e7eb", borderRadius: "12px", cursor: "pointer", background: "#fafafa" },
-  previewGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))", gap: "10px", marginTop: "12px" },
-  previewWrap: { position: "relative", borderRadius: "10px", overflow: "hidden" },
-  previewImg: { width: "100%", height: "90px", objectFit: "cover", display: "block" },
-  removeImg: { position: "absolute", top: "4px", right: "4px", background: "rgba(0,0,0,0.6)", color: "white", border: "none", borderRadius: "50%", width: "20px", height: "20px", cursor: "pointer", fontSize: "10px", display: "flex", alignItems: "center", justifyContent: "center" },
-  coverBadge: { position: "absolute", bottom: "4px", left: "4px", background: "#7c3aed", color: "white", fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px" },
+  stepActive: {
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+  },
 
-  /* error */
-  errorBox: { margin: "0 28px 16px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", color: "#dc2626", fontSize: "14px" },
+  stepDone: {
+    background: "#7c3aed",
+    color: "white",
+  },
 
-  /* buttons */
-  btnRow: { display: "flex", gap: "10px", padding: "0 28px 28px" },
-  backBtn: { padding: "13px 20px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "15px", cursor: "pointer" },
-  nextBtn: { flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer" },
-  nextBtnLoading: { opacity: 0.65, cursor: "not-allowed" },
+  stepLabel: {
+    margin: "0 0 2px",
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#374151",
+  },
 
-  /* success */
-  successCard: { background: "white", borderRadius: "20px", padding: "48px 40px", maxWidth: "480px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" },
-  successIcon: { fontSize: "56px", marginBottom: "16px" },
-  successTitle: { fontSize: "26px", fontWeight: 900, color: "#111827", margin: "0 0 12px" },
-  successSub: { fontSize: "15px", color: "#6b7280", lineHeight: 1.7, margin: "0 0 28px" },
-  successChecks: { display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px", textAlign: "left" },
-  successCheck: { display: "flex", alignItems: "center", gap: "12px", fontSize: "15px", color: "#374151" },
-  successCheckIcon: { width: "24px", height: "24px", borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, flexShrink: 0 },
+  stepHint: {
+    margin: 0,
+    fontSize: "12px",
+    color: "#9ca3af",
+  },
 
+  sidebarTip: {
+    background: "#faf5ff",
+    border: "1px solid #ede9fe",
+    borderRadius: "12px",
+    padding: "16px",
+  },
+
+  tipTitle: {
+    margin: "0 0 10px",
+    fontSize: "13px",
+    fontWeight: 800,
+    color: "#7c3aed",
+  },
+
+  tipList: {
+    margin: 0,
+    paddingLeft: "18px",
+    fontSize: "13px",
+    color: "#6b7280",
+    lineHeight: 2,
+  },
+
+  main: {
+    flex: "2 1 500px",
+    width: "100%",
+    minWidth: 0,
+  },
+
+  formCard: {
+    background: "white",
+    borderRadius: "20px",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.06)",
+    overflow: "hidden",
+  },
+
+  formCardHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "20px 16px 0",
+    flexWrap: "wrap",
+    gap: "10px",
+  },
+
+  formCardTitle: {
+    margin: 0,
+    fontSize: "20px",
+    fontWeight: 900,
+    color: "#111827",
+  },
+
+  stepBadge: {
+    background: "#ede9fe",
+    color: "#7c3aed",
+    padding: "4px 12px",
+    borderRadius: "20px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+
+  progressBg: {
+    height: "4px",
+    background: "#f3f4f6",
+    margin: "16px 0 0",
+  },
+
+  progressFill: {
+    height: "100%",
+    background: "linear-gradient(90deg,#7c3aed,#4f46e5)",
+  },
+
+  fields: {
+    padding: "20px 16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+  },
+
+  label: {
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#374151",
+  },
+
+  input: {
+    padding: "11px 14px",
+    borderRadius: "10px",
+    border: "1.5px solid #e5e7eb",
+    fontSize: "14px",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+
+  row2: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: "12px",
+  },
+
+  typeGrid: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+  },
+
+  typeBtn: {
+    padding: "8px 14px",
+    borderRadius: "10px",
+    border: "1.5px solid #e5e7eb",
+    background: "white",
+    cursor: "pointer",
+  },
+
+  typeBtnActive: {
+    border: "1.5px solid #7c3aed",
+    background: "#faf5ff",
+    color: "#7c3aed",
+  },
+
+  amenitiesGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+    gap: "10px",
+  },
+
+  addressRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+  },
+
+  findBtn: {
+    padding: "11px 18px",
+    borderRadius: "10px",
+    border: "none",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  mapWrap: {
+    borderRadius: "12px",
+    overflow: "hidden",
+    border: "1.5px solid #e5e7eb",
+  },
+
+  previewGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))",
+    gap: "10px",
+  },
+
+  btnRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    padding: "0 16px 20px",
+  },
+
+  backBtn: {
+    padding: "13px 20px",
+    borderRadius: "12px",
+    border: "1.5px solid #e5e7eb",
+    background: "white",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+
+  nextBtn: {
+    flex: 1,
+    padding: "13px",
+    borderRadius: "12px",
+    border: "none",
+    background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+    color: "white",
+    fontWeight: 800,
+    cursor: "pointer",
+  },
+
+  nextBtnLoading: {
+    opacity: 0.65,
+    cursor: "not-allowed",
+  },
+
+  errorBox: {
+    margin: "0 16px 12px",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    borderRadius: "10px",
+    padding: "12px",
+    color: "#dc2626",
+  },
+
+  successCard: {
+    background: "white",
+    borderRadius: "20px",
+    padding: "32px 20px",
+    maxWidth: "480px",
+    width: "100%",
+    textAlign: "center",
+  },
 };
