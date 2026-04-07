@@ -388,10 +388,23 @@ function Toggle({ label, value, onChange }) {
 
 /* ── styles ── */
 const S = {
-  page: { display: "flex", minHeight: "100vh", fontFamily: "'Segoe UI', sans-serif" },
+  page: { display: "flex", minHeight: "100vh", fontFamily: "'Segoe UI', sans-serif", flexWrap: "wrap" },
 
   /* left */
-  leftPanel: { width: "400px", minWidth: "340px", background: "linear-gradient(160deg,#3b0764 0%,#4f46e5 100%)", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "48px 40px 0", position: "relative", overflow: "hidden", "@media(max-width:768px)": { display: "none" } },
+  leftPanel: {
+    width: "400px",
+    maxWidth: "400px",
+    minWidth: "300px",
+    background: "linear-gradient(160deg,#3b0764 0%,#4f46e5 100%)",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    padding: "48px 32px 0",
+    position: "relative",
+    overflow: "hidden",
+    boxSizing: "border-box",
+    flex: "1 1 360px",
+  },  
   leftContent: { position: "relative", zIndex: 2 },
   leftLogo: { fontSize: "22px", fontWeight: 900, color: "white", marginBottom: "40px" },
   leftHeading: { fontSize: "30px", fontWeight: 900, color: "white", lineHeight: 1.25, marginBottom: "12px" },
@@ -402,12 +415,34 @@ const S = {
   leftImg: { height: "220px", background: `url(https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&auto=format&fit=crop&q=80) center/cover`, borderRadius: "16px 16px 0 0", marginTop: "32px", opacity: 0.55 },
 
   /* right */
-  rightPanel: { flex: 1, overflowY: "auto", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "48px 24px", background: "#faf9ff" },
+  rightPanel: {
+    flex: "1 1 420px",
+    minWidth: 0,
+    overflowY: "auto",
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    padding: "48px 20px",
+    background: "#faf9ff",
+    boxSizing: "border-box",
+  },  
   formWrap: { width: "100%", maxWidth: "520px" },
 
   /* progress */
-  progressRow: { display: "flex", alignItems: "center", marginBottom: "36px" },
-  progressItem: { display: "flex", alignItems: "center", gap: "8px", flex: 1 },
+  progressRow: {
+    display: "flex",
+    alignItems: "center",
+    marginBottom: "36px",
+    flexWrap: "wrap",
+    gap: "8px",
+  },  
+  progressItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flex: "1 1 100px",
+    minWidth: "100px",
+  },  
   progressCircle: { width: "30px", height: "30px", borderRadius: "50%", background: "#e5e7eb", color: "#9ca3af", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   progressActive: { background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" },
   progressDone: { background: "#7c3aed", color: "white" },
@@ -426,9 +461,17 @@ const S = {
   label: { fontSize: "13px", fontWeight: 700, color: "#374151" },
   input: { padding: "11px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb", fontSize: "14px", outline: "none", background: "white", color: "#111827", width: "100%", boxSizing: "border-box", fontFamily: "inherit" },
 
-  row2: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" },
-  row3: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" },
-
+  row2: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "14px",
+  },  
+  row3: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+    gap: "12px",
+  },
+  
   /* password */
   pwWrap: { position: "relative" },
   eyeBtn: { position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" },
@@ -443,7 +486,11 @@ const S = {
   prefNote: { fontWeight: 500, color: "#9ca3af", fontSize: "12px" },
 
   /* toggles */
-  toggleRow: { display: "flex", gap: "12px", flexWrap: "wrap" },
+  toggleRow: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+  },  
   toggleBtn: { display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", cursor: "pointer" },
   toggleBtnOn: { border: "1.5px solid #ede9fe", background: "#faf5ff" },
   toggleThumb: { width: "32px", height: "18px", borderRadius: "9px", background: "#d1d5db", position: "relative", transition: "background 0.2s", flexShrink: 0 },
@@ -453,7 +500,12 @@ const S = {
   errorBox: { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", color: "#dc2626", fontSize: "14px", marginBottom: "16px" },
 
   /* buttons */
-  btnRow: { display: "flex", gap: "10px", marginBottom: "20px" },
+  btnRow: {
+    display: "flex",
+    gap: "10px",
+    marginBottom: "20px",
+    flexWrap: "wrap",
+  },  
   backBtn: { padding: "13px 20px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "15px", cursor: "pointer" },
   nextBtn: { flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer" },
   nextBtnLoading: { opacity: 0.6, cursor: "not-allowed" },

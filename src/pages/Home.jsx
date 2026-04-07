@@ -243,11 +243,29 @@ const S = {
 
   /* Nav */
   nav: { position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #e5e7eb" },
-  navInner: { maxWidth: "1180px", margin: "0 auto", padding: "0 24px", height: "64px", display: "flex", alignItems: "center", justifyContent: "space-between" },
+  navInner: {
+    maxWidth: "1180px",
+    margin: "0 auto",
+    padding: "0 16px",
+    height: "64px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: "10px",
+  },  
   navLogo: { fontSize: "20px", fontWeight: 800, color: "#7c3aed" },
-  navLinks: { display: "flex", gap: "28px" },
+  navLinks: {
+    display: "flex",
+    gap: "20px",
+    flexWrap: "wrap",
+  },  
   navLink: { textDecoration: "none", color: "#374151", fontWeight: 500, fontSize: "15px" },
-  navCta: { display: "flex", gap: "10px" },
+  navCta: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+  },  
   navBtnOutline: { padding: "8px 18px", border: "1.5px solid #7c3aed", borderRadius: "10px", background: "transparent", color: "#7c3aed", fontWeight: 700, cursor: "pointer", fontSize: "14px" },
   navBtnFill: { padding: "8px 18px", border: "none", borderRadius: "10px", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "14px" },
 
@@ -255,18 +273,35 @@ const S = {
   hero: { position: "relative", height: "100vh", minHeight: "600px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" },
   heroBg: { position: "absolute", inset: 0, backgroundSize: "cover", backgroundPosition: "center" },
   heroOverlay: { position: "absolute", inset: 0, background: "linear-gradient(135deg, rgba(44,20,90,0.78) 0%, rgba(30,27,75,0.65) 100%)" },
-  heroContent: { position: "relative", zIndex: 2, textAlign: "center", padding: "0 24px", maxWidth: "760px" },
+  heroContent: {
+    position: "relative",
+    zIndex: 2,
+    textAlign: "center",
+    padding: "0 16px",
+    maxWidth: "760px",
+  },  
   heroBadge: { display: "inline-block", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "white", borderRadius: "100px", padding: "6px 16px", fontSize: "14px", fontWeight: 600, marginBottom: "24px" },
   heroTitle: { fontSize: "clamp(40px, 7vw, 72px)", fontWeight: 900, color: "white", lineHeight: 1.1, margin: "0 0 20px", letterSpacing: "-1px" },
   heroSub: { fontSize: "18px", color: "rgba(255,255,255,0.82)", lineHeight: 1.7, margin: "0 0 36px" },
-  heroButtons: { display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap", marginBottom: "48px" },
+  heroButtons: {
+    display: "flex",
+    gap: "14px",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    marginBottom: "48px",
+  },  
   heroPrimaryBtn: { padding: "14px 28px", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", border: "none", borderRadius: "12px", fontWeight: 800, fontSize: "16px", cursor: "pointer" },
   heroOutlineBtn: { padding: "14px 28px", background: "rgba(255,255,255,0.12)", color: "white", border: "2px solid rgba(255,255,255,0.5)", borderRadius: "12px", fontWeight: 700, fontSize: "16px", cursor: "pointer" },
-  heroStats: { display: "flex", gap: "40px", justifyContent: "center" },
+  heroStats: {
+    display: "flex",
+    gap: "40px",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },  
   heroStat: { display: "flex", flexDirection: "column", alignItems: "center" },
   heroStatVal: { fontSize: "28px", fontWeight: 900, color: "white" },
   heroStatLabel: { fontSize: "13px", color: "rgba(255,255,255,0.65)", fontWeight: 500 },
-  heroDots: { position: "absolute", bottom: "32px", left: "50%", transform: "translateX(-50%)", display: "flex", gap: "8px", zIndex: 3 },
+  heroDots: { position: "absolute", bottom: "32px", left: "50%", transform: "translateX(-50%)", display: "flex",flexWrap: "wrap", gap: "8px", zIndex: 3 },
   heroDot: { width: "8px", height: "8px", borderRadius: "50%", background: "white", border: "none", cursor: "pointer", transition: "all 0.3s ease", padding: 0 },
 
   /* Sections */
@@ -276,14 +311,22 @@ const S = {
   sectionTitle: { fontSize: "clamp(28px, 4vw, 42px)", fontWeight: 900, color: "#111827", margin: "0 0 48px", lineHeight: 1.2, letterSpacing: "-0.5px" },
 
   /* Features */
-  featuresGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" },
+  featuresGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "24px",
+  },  
   featureCard: { background: "#faf9ff", border: "1px solid #ede9fe", borderRadius: "16px", padding: "28px 24px" },
   featureIcon: { fontSize: "32px", display: "block", marginBottom: "16px" },
   featureTitle: { fontSize: "17px", fontWeight: 800, color: "#111827", margin: "0 0 8px" },
   featureDesc: { fontSize: "15px", color: "#6b7280", lineHeight: 1.65, margin: 0 },
 
   /* Listings */
-  listingsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" },
+  listingsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "24px",
+  },  
   listingCard: { background: "white", borderRadius: "16px", boxShadow: "0 4px 20px rgba(0,0,0,0.07)", overflow: "hidden" },
   listingImgWrap: { position: "relative", height: "200px" },
   listingImg: { width: "100%", height: "100%", objectFit: "cover" },
@@ -292,13 +335,23 @@ const S = {
   listingBody: { padding: "18px" },
   listingTitle: { fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 4px" },
   listingDist: { fontSize: "13px", color: "#2563eb", margin: "0 0 14px" },
-  listingFooter: { display: "flex", justifyContent: "space-between", alignItems: "center" },
+  listingFooter: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "10px",
+  },  
   listingPrice: { fontSize: "22px", fontWeight: 900, color: "#7c3aed" },
   listingPriceSub: { fontSize: "13px", color: "#9ca3af", fontWeight: 400 },
   listingBtn: { padding: "8px 18px", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", border: "none", borderRadius: "10px", fontWeight: 700, cursor: "pointer", fontSize: "14px" },
 
   /* Steps */
-  stepsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: "24px" },
+  stepsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: "24px",
+  },  
   stepCard: { position: "relative", padding: "28px 20px 20px", background: "#faf9ff", border: "1px solid #ede9fe", borderRadius: "16px" },
   stepNum: { fontSize: "36px", fontWeight: 900, color: "#ede9fe", marginBottom: "12px", lineHeight: 1 },
   stepConnector: { display: "none" },

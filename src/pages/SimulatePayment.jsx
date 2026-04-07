@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 export default function SimulatePayment() {
   const navigate = useNavigate();
-  const [setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { bookingId } = useParams();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -166,10 +166,14 @@ export default function SimulatePayment() {
 
         <button
           onClick={handlePayment}
-          disabled={!paymentMethod}
-          style={styles.payBtn}
+          disabled={!paymentMethod || loading}
+          style={{
+            ...styles.payBtn,
+            opacity: loading ? 0.6 : 1,
+            cursor: loading ? "not-allowed" : "pointer"
+          }}
         >
-          Confirm & Pay ${depositAmount}
+          {loading ? "Processing..." : `Confirm & Pay $${depositAmount}`}
         </button>
       </div>
     </div>
@@ -182,15 +186,22 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#f3f4f6"
+    background: "#f3f4f6",
+    padding: "20px",
+    boxSizing: "border-box",
   },
+
   card: {
     background: "white",
-    padding: "40px",
+    padding: "24px",
     borderRadius: "12px",
     textAlign: "center",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)"
+    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
+    width: "100%",
+    maxWidth: "420px",
+    boxSizing: "border-box",
   },
+
   payBtn: {
     marginTop: "20px",
     padding: "12px 20px",
@@ -198,20 +209,25 @@ const styles = {
     color: "white",
     border: "none",
     borderRadius: "8px",
-    cursor: "pointer"
+    cursor: "pointer",
+    width: "100%",
   },
+
   summaryBox: {
     backgroundColor: "#f1f5f9",
     padding: "15px",
     borderRadius: "8px",
-    marginBottom: "20px"
+    marginBottom: "20px",
+    textAlign: "left",
   },
+
   input: {
     padding: "10px",
     marginTop: "10px",
     marginBottom: "10px",
     borderRadius: "6px",
     border: "1px solid #ddd",
-    width: "100%"
+    width: "100%",
+    boxSizing: "border-box",
   },
 };

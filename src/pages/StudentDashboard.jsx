@@ -369,7 +369,7 @@ function StudentDashboard({ user: propUser }) {
             { key: "overview",       icon: "🏠", label: "Dashboard"          },
             { key: "accommodations", icon: "🔍", label: "Find Accommodation"  },
             { key: "roommates",      icon: "👥", label: "Roommates"   },
-            { key: "profile",        icon: "👤", label: "My Profile"          },
+            { key: "profile",        icon: "👤", label: "My Profile"  },
           ].map(({ key, icon, label }) => (
             <button key={key} style={activeTab === key ? S.navItemActive : S.navItem} onClick={() => setActiveTab(key)}>
               <span style={S.navIcon}>{icon}</span>{label}
@@ -493,7 +493,7 @@ function StudentDashboard({ user: propUser }) {
                           {req.status.toUpperCase()}
                         </span>
                       </div>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
                         {req.status === "confirmed" && req.payment_status === "unpaid" && req.payment_deadline && (
                             <p style={{
                                 fontSize: "12px",
@@ -1445,8 +1445,20 @@ function PropertyCard({ property, selectedInstitution, calculateDistance, onClic
 
 /* ── Roommate matching styles ── */
 const RM = {
-  page: { padding: "0 32px 32px", display: "flex", flexDirection: "column", gap: "20px" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: "24px", flexWrap: "wrap", gap: "12px" },
+  page: {
+    padding: "0 16px 24px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+  },  
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    paddingTop: "24px",
+    flexWrap: "wrap",
+    gap: "12px",
+  },
   headerTitle: { fontSize: "20px", fontWeight: 900, color: "#111827", margin: "0 0 4px" },
   headerSub: { fontSize: "14px", color: "#6b7280", margin: 0 },
   propertyChip: { background: "#ede9fe", color: "#7c3aed", padding: "8px 16px", borderRadius: "20px", fontSize: "13px", fontWeight: 700 },
@@ -1455,7 +1467,11 @@ const RM = {
   myPrefsTags: { display: "flex", flexWrap: "wrap", gap: "8px" },
   prefTag: { background: "#f5f3ff", color: "#7c3aed", padding: "5px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: "1px solid #ede9fe" },
   resultsCount: { fontSize: "13px", color: "#9ca3af", fontWeight: 600, margin: 0 },
-  matchGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "20px" },
+  matchGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "20px",
+  },  
   matchCard: { background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "20px", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" },
   matchCardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" },
   matchAvatar: { width: "52px", height: "52px", borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontSize: "20px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" },
@@ -1483,7 +1499,11 @@ const RM = {
   browseHeader: { marginBottom: "4px" },
   browseTitle: { fontSize: "17px", fontWeight: 800, color: "#111827", margin: "0 0 4px" },
   browseSub: { fontSize: "13px", color: "#9ca3af", margin: 0 },
-  browseGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "18px" },
+  browseGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "20px",
+  },  
   browseCard: { background: "white", borderRadius: "14px", border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.04)" },
   browseImgWrap: { position: "relative", height: "160px" },
   browseImg: { width: "100%", height: "100%", objectFit: "cover" },

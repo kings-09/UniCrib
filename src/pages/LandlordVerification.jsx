@@ -747,7 +747,7 @@ function CheckRow({ text }) {
    STYLES
 ───────────────────────────────────────────────────────────── */
 const V = {
-  page:       { padding: "28px 32px", display: "flex", flexDirection: "column", gap: "24px", maxWidth: "680px", margin: "0 auto" },
+  page:       { padding: "28px 32px", display: "flex", flexDirection: "column",flexWrap: "wrap", gap: "24px", maxWidth: "680px", margin: "0 auto" },
   centered:   { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "300px", gap: "16px" },
   spinner:    { width: "32px", height: "32px", border: "3px solid #ede9fe", borderTop: "3px solid #7c3aed", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
 
@@ -765,18 +765,18 @@ const V = {
   cardSub:    { fontSize: "14px", color: "#6b7280", lineHeight: 1.7, margin: "0 0 24px" },
   introIcon:  { fontSize: "48px", marginBottom: "16px" },
 
-  requirementList: { display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" },
-  requirement:     { display: "flex", alignItems: "flex-start", gap: "14px", padding: "16px", background: "#f8f7ff", borderRadius: "12px", border: "1px solid #ede9fe" },
+  requirementList: { display: "flex", flexDirection: "column",flexWrap: "wrap", gap: "16px", marginBottom: "24px" },
+  requirement:     { display: "flex", alignItems: "flex-start",flexWrap: "wrap", gap: "14px", padding: "16px", background: "#f8f7ff", borderRadius: "12px", border: "1px solid #ede9fe" },
   reqIcon:         { fontSize: "28px", flexShrink: 0 },
   reqTitle:        { margin: "0 0 4px", fontWeight: 700, fontSize: "15px", color: "#111827" },
   reqSub:          { margin: 0, fontSize: "13px", color: "#6b7280" },
 
-  warningBox: { display: "flex", alignItems: "flex-start", gap: "12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "14px 16px", marginBottom: "24px" },
+  warningBox: { display: "flex", alignItems: "flex-start",flexWrap: "wrap", gap: "12px", background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "14px 16px", marginBottom: "24px" },
 
   primaryBtn:  { width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer" },
   disabledBtn: { background: "#d1d5db", cursor: "not-allowed" },
   backBtn:     { padding: "13px 20px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "15px", cursor: "pointer" },
-  btnRow:      { display: "flex", gap: "10px", marginTop: "20px" },
+  btnRow:      { display: "flex",flexWrap: "wrap", gap: "10px", marginTop: "20px" },
   errorBox:    { background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", color: "#dc2626", fontSize: "14px", margin: "12px 0" },
   retryBtn:    { padding: "12px 24px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 700, fontSize: "14px", cursor: "pointer", marginTop: "16px" },
 
@@ -789,10 +789,10 @@ const V = {
   pendingCard:  { background: "white", borderRadius: "20px", border: "1px solid #e5e7eb", padding: "48px 32px", textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" },
   pendingTitle: { fontSize: "22px", fontWeight: 900, color: "#111827", margin: "0 0 10px" },
   pendingSub:   { fontSize: "14px", color: "#6b7280", lineHeight: 1.7, margin: "0 0 28px" },
-  pendingSteps: { display: "flex", flexDirection: "column", gap: "12px", textAlign: "left", maxWidth: "320px", margin: "0 auto" },
+  pendingSteps: { display: "flex", flexDirection: "column",flexWrap: "wrap", gap: "12px", textAlign: "left", maxWidth: "320px", margin: "0 auto" },
   pendingStep:  { display: "flex", alignItems: "center", gap: "12px", fontSize: "14px", color: "#374151" },
-  stepDone:     { width: "24px", height: "24px", borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, flexShrink: 0 },
-  stepPending:  { width: "24px", height: "24px", borderRadius: "50%", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", flexShrink: 0 },
+  stepDone:     { width: "24px", height: "24px", borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex",flexWrap: "wrap", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, flexShrink: 0 },
+  stepPending:  { width: "24px", height: "24px", borderRadius: "50%", background: "#fef3c7", color: "#d97706", display: "flex",flexWrap: "wrap", alignItems: "center", justifyContent: "center", fontSize: "12px", flexShrink: 0 },
 
   rejectedCard:  { background: "white", borderRadius: "20px", border: "1.5px solid #fecaca", padding: "48px 32px", textAlign: "center" },
   rejectedTitle: { fontSize: "22px", fontWeight: 900, color: "#dc2626", margin: "0 0 10px" },
@@ -800,10 +800,10 @@ const V = {
 };
 
 const C = {
-  wrap:        { display: "flex", flexDirection: "column", gap: "20px" },
+  wrap:        { display: "flex", flexDirection: "column",flexWrap: "wrap", gap: "20px" },
   tipsCard:    { background: "#f8f7ff", border: "1px solid #ede9fe", borderRadius: "12px", padding: "16px" },
   tipsTitle:   { fontSize: "13px", fontWeight: 800, color: "#7c3aed", margin: "0 0 10px" },
-  tipsList:    { display: "flex", flexDirection: "column", gap: "8px" },
+  tipsList:    { display: "flex", flexDirection: "column",flexWrap: "wrap", gap: "8px" },
   tip:         { display: "flex", alignItems: "flex-start", gap: "8px" },
   tipDot:      { color: "#16a34a", fontWeight: 700, fontSize: "13px", flexShrink: 0 },
 

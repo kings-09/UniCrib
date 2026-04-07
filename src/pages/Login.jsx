@@ -201,27 +201,37 @@ const S = {
     display: "flex",
     minHeight: "100vh",
     fontFamily: "'Segoe UI', sans-serif",
+    flexWrap: "wrap",
   },
 
   /* ── Left panel ── */
   leftPanel: {
-    width: "420px",
-    minWidth: "340px",
+    width: "100%",
+    maxWidth: "420px",
+    minWidth: "300px",
     background: "linear-gradient(160deg,#3b0764 0%,#4f46e5 100%)",
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    padding: "48px 40px 0",
+    padding: "48px 32px 0",
     overflow: "hidden",
     position: "relative",
+    boxSizing: "border-box",
+    flex: "1 1 360px",
   },
-  leftContent: { position: "relative", zIndex: 2 },
+
+  leftContent: {
+    position: "relative",
+    zIndex: 2,
+  },
+
   leftLogo: {
     fontSize: "22px",
     fontWeight: 900,
     color: "white",
     marginBottom: "48px",
   },
+
   leftHeading: {
     fontSize: "34px",
     fontWeight: 900,
@@ -230,18 +240,21 @@ const S = {
     margin: "0 0 14px",
     letterSpacing: "-0.5px",
   },
+
   leftSub: {
     fontSize: "15px",
     color: "rgba(255,255,255,0.72)",
     lineHeight: 1.7,
     margin: "0 0 48px",
   },
+
   testimonial: {
     background: "rgba(255,255,255,0.1)",
     border: "1px solid rgba(255,255,255,0.18)",
     borderRadius: "16px",
     padding: "24px",
   },
+
   testimonialText: {
     fontSize: "15px",
     color: "rgba(255,255,255,0.9)",
@@ -249,11 +262,14 @@ const S = {
     margin: "0 0 20px",
     fontStyle: "italic",
   },
+
   testimonialAuthor: {
     display: "flex",
     alignItems: "center",
     gap: "12px",
+    flexWrap: "wrap",
   },
+
   testimonialAvatar: {
     width: "38px",
     height: "38px",
@@ -267,17 +283,20 @@ const S = {
     justifyContent: "center",
     flexShrink: 0,
   },
+
   testimonialName: {
     margin: 0,
     fontSize: "14px",
     fontWeight: 700,
     color: "white",
   },
+
   testimonialRole: {
     margin: 0,
     fontSize: "12px",
     color: "rgba(255,255,255,0.6)",
   },
+
   leftImg: {
     height: "200px",
     background:
@@ -289,20 +308,26 @@ const S = {
 
   /* ── Right panel ── */
   rightPanel: {
-    flex: 1,
+    flex: "1 1 420px",
+    minWidth: 0,
     background: "#faf9ff",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "48px 24px",
+    padding: "48px 20px",
     overflowY: "auto",
+    boxSizing: "border-box",
   },
+
   formWrap: {
     width: "100%",
     maxWidth: "440px",
   },
 
-  formHeader: { marginBottom: "28px" },
+  formHeader: {
+    marginBottom: "28px",
+  },
+
   formTitle: {
     fontSize: "28px",
     fontWeight: 900,
@@ -310,11 +335,14 @@ const S = {
     margin: "0 0 8px",
     letterSpacing: "-0.5px",
   },
+
   formSub: {
     fontSize: "14px",
     color: "#6b7280",
     margin: 0,
+    lineHeight: 1.5,
   },
+
   inlineLink: {
     color: "#7c3aed",
     fontWeight: 700,
@@ -331,6 +359,7 @@ const S = {
     fontSize: "14px",
     marginBottom: "20px",
   },
+
   errorBox: {
     background: "#fef2f2",
     border: "1px solid #fecaca",
@@ -348,21 +377,27 @@ const S = {
     gap: "18px",
     marginBottom: "24px",
   },
+
   fieldGroup: {
     display: "flex",
     flexDirection: "column",
     gap: "6px",
   },
+
   label: {
     fontSize: "13px",
     fontWeight: 700,
     color: "#374151",
   },
+
   labelRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
   },
+
   forgotBtn: {
     background: "none",
     border: "none",
@@ -372,6 +407,7 @@ const S = {
     cursor: "pointer",
     padding: 0,
   },
+
   input: {
     padding: "12px 14px",
     borderRadius: "10px",
@@ -384,7 +420,11 @@ const S = {
     boxSizing: "border-box",
     fontFamily: "inherit",
   },
-  pwWrap: { position: "relative" },
+
+  pwWrap: {
+    position: "relative",
+  },
+
   eyeBtn: {
     position: "absolute",
     right: "12px",
@@ -410,16 +450,19 @@ const S = {
     cursor: "pointer",
     marginBottom: "24px",
   },
+
   loginBtnLoading: {
     opacity: 0.65,
     cursor: "not-allowed",
   },
+
   spinnerRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "10px",
   },
+
   spinner: {
     width: "16px",
     height: "16px",
@@ -437,11 +480,13 @@ const S = {
     gap: "12px",
     marginBottom: "16px",
   },
+
   dividerLine: {
     flex: 1,
     height: "1px",
     background: "#e5e7eb",
   },
+
   dividerText: {
     fontSize: "13px",
     color: "#9ca3af",
