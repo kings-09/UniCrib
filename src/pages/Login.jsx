@@ -17,7 +17,7 @@ export default function Login() {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate("/dashboard");
     });
-  }, []);
+  }, [navigate]);
 
   const handleLogin = async () => {
     setError("");

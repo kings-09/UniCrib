@@ -17,7 +17,7 @@ export default function ProtectedRoute({ children }) {
     );
 
     return () => listener.subscription.unsubscribe();
-  }, [Navigate]);
+  }, []);
 
   if (user === undefined) {
     return <p>Loading...</p>; // Wait for Supabase check

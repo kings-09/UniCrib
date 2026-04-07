@@ -875,9 +875,9 @@ function RoommateMatching() {
     useEffect(() => { fetchData(); }, []);
 
     const fetchData = async () => {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+        setLoading(true);
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
   // 1. Get current student's profile
     const { data: profile } = await supabase
@@ -891,7 +891,7 @@ function RoommateMatching() {
     const hasPrefs = profile?.sleep_schedule && profile?.cleanliness && profile?.social_style;
     if (!hasPrefs) { setIncomplete(true); setLoading(false); return; }
 
-  // 2. Find this student's approved + paid booking
+  // 2. Find this student's confirmed + paid booking
     const { data: myBookingData } = await supabase
         .from("booking_requests")
         .select(`

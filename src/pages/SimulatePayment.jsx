@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 export default function SimulatePayment() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+  const [setLoading] = useState(false);
   const { bookingId } = useParams();
   const [paymentMethod, setPaymentMethod] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");

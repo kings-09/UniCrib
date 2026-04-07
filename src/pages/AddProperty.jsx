@@ -158,10 +158,11 @@ export default function AddProperty() {
 
       // ── auto-generate rooms ──
       const roomsToInsert = Array.from({ length: Number(rooms) }, (_, i) => ({
-        property_id:   insertedProperty.id,
-        room_number:   `Room ${i + 1}`,
+        property_id: insertedProperty.id,
+        room_number: `Room ${i + 1}`,
         max_occupants: Number(maxOccupants),
-        is_occupied:   false,
+        current_occupants: 0,
+        is_occupied: false,
       }));
 
       const { error: roomError } = await supabase
