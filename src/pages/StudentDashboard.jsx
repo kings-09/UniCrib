@@ -1152,7 +1152,6 @@ function RoommateMatching() {
   );
 }
 function StudentProfile({ onDeleted }) {
-  const navigate = useNavigate();
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
   const [deleting,  setDeleting]  = useState(false);
