@@ -44,7 +44,7 @@ function Navbar() {
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   if (loading) return null;
 

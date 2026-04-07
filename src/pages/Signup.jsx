@@ -56,7 +56,7 @@ export default function Signup() {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate("/dashboard");
     });
-  }, []);
+  }, [navigate]);
 
   /* ─── validation per step ─── */
   const validate = () => {
