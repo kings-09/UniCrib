@@ -140,7 +140,12 @@ export default function Signup() {
       const { error: profileError } = await supabase.from("user_profiles").insert(profilePayload);
       if (profileError) { setError(profileError.message); setLoading(false); return; }
 
-      navigate("/login", { state: { message: "Account created! Check your email to confirm, then log in." } });
+      if (role === "landlord") {
+        // Landlords skip the login page and go straight to the verification gate
+        navigate("/dashboard");
+      } else {
+        navigate("/login", { state: { message: "Account created! Check your email to confirm, then log in." } });
+      }
     } catch (e) {
       setError("Something went wrong. Please try again.");
     }
