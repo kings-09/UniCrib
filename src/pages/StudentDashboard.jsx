@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
-import { StatCard, EmptyState, sharedStyles as S } from "../components/DashboardShared";
+import { StatCard, EmptyState, sharedStyles as S, ResponsiveSidebar } from "../components/DashboardShared";
 
 const SLEEP_LABELS = {
   early_bird: "Early bird",
@@ -350,7 +350,7 @@ function StudentDashboard({ user: propUser }) {
   return (
     <div style={S.pageWrap}>
       {/* ── SIDEBAR ── */}
-      <aside style={S.sidebar}>
+      <ResponsiveSidebar>
         <div style={S.sidebarLogo}>
           <span style={S.logoIcon}>🏠</span>
           <span style={S.logoText}>UniCrib</span>
@@ -388,9 +388,7 @@ function StudentDashboard({ user: propUser }) {
         <button style={S.logoutBtn} onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>
           🚪 Logout
         </button>
-      </aside>
-
-      {/* ── MAIN ── */}
+      </ResponsiveSidebar>
       <main style={S.main}>
         <div style={S.headerBanner}>
           <div>

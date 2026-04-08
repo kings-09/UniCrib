@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
-import { StatCard, sharedStyles as S } from "../components/DashboardShared";
+import { StatCard, sharedStyles as S, ResponsiveSidebar } from "../components/DashboardShared";
 import { VerificationReview } from "../pages/LandlordVerification";
 
 function AdminDashboard() {
@@ -113,7 +113,7 @@ function AdminDashboard() {
 
   return (
     <div style={S.pageWrap}>
-      <aside style={S.sidebar}>
+      <ResponsiveSidebar>
         <div style={S.sidebarLogo}><span style={S.logoIcon}>🏠</span><span style={S.logoText}>UniCrib</span></div>
         <div style={S.adminBadge}>🛡 Admin Panel</div>
         <nav style={S.navMenu}>
@@ -128,7 +128,7 @@ function AdminDashboard() {
           ))}
         </nav>
         <button style={S.logoutBtn} onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>🚪 Logout</button>
-      </aside>
+      </ResponsiveSidebar>
 
       <main style={S.main}>
         <div style={S.headerBanner}>

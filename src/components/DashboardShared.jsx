@@ -1,3 +1,88 @@
+import { useState, useEffect } from "react";
+
+/* ── Responsive sidebar wrapper ───────────────────────────────────────── */
+export function ResponsiveSidebar({ children }) {
+  const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      if (!mobile) setOpen(false);
+    };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  if (!isMobile) {
+    return <aside style={sharedStyles.sidebar}>{children}</aside>;
+  }
+
+  return (
+    <>
+      {/* Hamburger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          position: "fixed", top: "12px", left: "12px", zIndex: 1100,
+          background: "white", border: "1px solid #e5e7eb", borderRadius: "10px",
+          width: "40px", height: "40px", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.12)", fontSize: "18px",
+        }}
+        aria-label="Toggle menu"
+      >
+        {open ? "✕" : "☰"}
+      </button>
+
+      {/* Backdrop */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+            zIndex: 1050,
+          }}
+        />
+      )}
+
+      {/* Slide-in sidebar — clicking any nav button inside closes it */}
+      <aside
+        onClick={(e) => { if (e.target.tagName === "BUTTON") setOpen(false); }}
+        style={{
+          ...sharedStyles.sidebar,
+          position: "fixed", top: 0, left: 0, zIndex: 1060,
+          transform: open ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.25s ease",
+          height: "100dvh", overflowY: "auto",
+          boxShadow: open ? "4px 0 24px rgba(0,0,0,0.18)" : "none",
+        }}
+      >
+        {/* Close button inside sidebar */}
+        <button
+          onClick={() => setOpen(false)}
+          style={{
+            alignSelf: "flex-end", background: "none", border: "none",
+            fontSize: "20px", cursor: "pointer", color: "#6b7280",
+            marginBottom: "8px", padding: "4px 8px",
+          }}
+        >✕</button>
+        {children}
+      </aside>
+    </>
+  );
+}
+
+/* ── Mobile-aware page wrapper (adds top padding on mobile) ────────────── */
+export function PageWrap({ children }) {
+  return (
+    <div style={{ ...sharedStyles.pageWrap, flexDirection: "row" }}>
+      {children}
+    </div>
+  );
+}
+
 export function StatCard({ icon, label, value, color }) {
   return (
     <div style={{ ...sharedStyles.statCard, backgroundColor: color }}>
@@ -21,6 +106,7 @@ export const sharedStyles = {
     display: "flex", flexDirection: "column",
     padding: "24px 16px", borderRight: "1px solid #e5e7eb",
     position: "sticky", top: 0, height: "100vh", boxSizing: "border-box",
+    flexShrink: 0,
   },
   sidebarLogo: { display: "flex", alignItems: "center", gap: "10px", marginBottom: "28px" },
   logoIcon: { fontSize: "24px" },
@@ -65,6 +151,7 @@ export const sharedStyles = {
   headerBanner: {
     background: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%)",
     padding: "clamp(16px,3vw,28px) clamp(16px,3vw,32px)",
+    paddingLeft: "clamp(60px,3vw,32px)",  /* on mobile, leave room for hamburger */
     display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px",
   },
   greetingTitle: { margin: "0 0 4px", fontSize: "clamp(18px,3vw,24px)", fontWeight: 800, color: "white" },
@@ -95,7 +182,8 @@ export const sharedStyles = {
   },
   tabContent: { padding: 0 },
   statsGrid: {
-    display: "grid", gridTemplateColumns: "repeat(4,1fr)",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(min(160px, 100%), 1fr))",
     gap: "clamp(8px,2vw,16px)", padding: "clamp(12px,2vw,24px) clamp(12px,3vw,32px)",
   },
   statCard: {
