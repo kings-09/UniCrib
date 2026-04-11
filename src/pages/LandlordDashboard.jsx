@@ -7,9 +7,7 @@ import LandlordVerification from "../pages/LandlordVerification";
 function LandlordDashboard({ user }) {
   const [properties,   setProperties]   = useState([]);
   const [requests,     setRequests]     = useState([]);
-  const [editingId,    setEditingId]    = useState(null);
-  const [editTitle,    setEditTitle]    = useState("");
-  const [editPrice,    setEditPrice]    = useState("");
+
   const [imageIndexes, setImageIndexes] = useState({});
   const [activeTab,    setActiveTab]    = useState("properties");
   const navigate = useNavigate();
@@ -41,11 +39,18 @@ function LandlordDashboard({ user }) {
     setProperties(prev => prev.filter(p => p.id !== id));
   };
 
-  const saveEdit = async (id) => {
-    await supabase.from("properties").update({ title: editTitle, price: editPrice }).eq("id", id);
-    setProperties(prev => prev.map(p => p.id === id ? { ...p, title: editTitle, price: editPrice } : p));
-    setEditingId(null);
+  const resubmitProperty = async (id) => {
+    await supabase.from("properties").update({
+      rejection_reason: null,
+      is_approved: false,
+      reviewed_at: null,
+      admin_notes: null,
+    }).eq("id", id);
+    setProperties(prev => prev.map(p =>
+      p.id === id ? { ...p, rejection_reason: null, is_approved: false } : p
+    ));
   };
+
 
   const updateRequestStatus = async (reqId, status) => {
     await supabase.from("booking_requests").update({ status }).eq("id", reqId);
@@ -173,25 +178,39 @@ function LandlordDashboard({ user }) {
                         <span style={property.is_full ? S.overlayBadgeRed : S.overlayBadgeGreen}>{property.is_full ? "FULL" : "AVAILABLE"}</span>
                       </div>
                     )}
-                    {editingId === property.id ? (
-                      <div style={{ padding: "12px" }}>
-                        <input style={S.filterInput} value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Title" />
-                        <input style={{ ...S.filterInput, marginTop: "8px" }} value={editPrice} onChange={e => setEditPrice(e.target.value)} placeholder="Price" />
-                        <button style={{ ...S.primaryBtn, marginTop: "8px" }} onClick={() => saveEdit(property.id)}>Save</button>
-                      </div>
-                    ) : (
-                      <div style={{ padding: "12px" }}>
-                        <h4 style={{ margin: "0 0 4px" }}>{property.title}</h4>
-                        <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 4px" }}>${property.price}/mo</p>
-                        <p style={{ fontSize: "13px", color: property.is_approved ? "#16a34a" : "#f59e0b", margin: 0 }}>
-                          {property.is_approved ? "✅ Approved" : "⏳ Pending Approval"}
-                        </p>
-                      </div>
-                    )}
-                    <div style={{ ...S.actionRow, padding: "0 12px 12px" }}>
-                      <button style={S.editBtn} onClick={() => { setEditingId(property.id); setEditTitle(property.title); setEditPrice(property.price); }}>Edit</button>
-                      <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
-                      <button style={S.toggleBtn} onClick={() => toggleFull(property)}>{property.is_full ? "Mark Available" : "Mark Full"}</button>
+                    <div style={{ padding: "12px" }}>
+                      <h4 style={{ margin: "0 0 4px" }}>{property.title}</h4>
+                      <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 4px" }}>${property.price}/mo</p>
+                      {property.is_approved ? (
+                        <p style={{ fontSize: "13px", color: "#16a34a", margin: 0 }}>✅ Approved</p>
+                      ) : property.rejection_reason ? (
+                        <div style={{ marginTop: "6px" }}>
+                          <p style={{ fontSize: "13px", color: "#dc2626", fontWeight: 700, margin: "0 0 4px" }}>❌ Property Rejected</p>
+                          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", fontSize: "12px", color: "#7f1d1d", lineHeight: 1.5 }}>
+                            <strong>Reason:</strong> {property.rejection_reason}
+                          </div>
+                        </div>
+                      ) : (
+                        <p style={{ fontSize: "13px", color: "#f59e0b", margin: 0 }}>⏳ Pending Approval</p>
+                      )}
+                    </div>
+                    <div style={{ ...S.actionRow, padding: "0 12px 12px", flexWrap: "wrap", gap: "6px" }}>
+                      {property.rejection_reason ? (
+                        <>
+                          <button style={S.editBtn} onClick={() => navigate("/add-property", { state: { property: property } })}>✏️ Edit</button>
+                          <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
+                          <button
+                            style={{ flex: 2, padding: "8px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
+                            onClick={() => resubmitProperty(property.id)}
+                          >🔄 Resubmit</button>
+                        </>
+                      ) : (
+                        <>
+                          <button style={S.editBtn} onClick={() => navigate("/add-property", { state: { property: property } })}>✏️ Edit</button>
+                          <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
+                          <button style={S.toggleBtn} onClick={() => toggleFull(property)}>{property.is_full ? "Mark Available" : "Mark Full"}</button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

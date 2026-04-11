@@ -1,14 +1,15 @@
-// src/pages/Dashboard.jsx
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useNavigate } from "react-router-dom";
 import StudentDashboard from "./StudentDashboard";
 import LandlordDashboard from "./LandlordDashboard";
 import AdminDashboard from "./AdminDashboard";
 import LandlordVerification from "./LandlordVerification";
 
 export default function Dashboard() {
-  const [role,               setRole]               = useState(null);
-  const [user,               setUser]               = useState(null);
+  const navigate = useNavigate();
+  const [role,               setRole] = useState(null);
+  const [user,               setUser] = useState(null);
   const [verificationStatus, setVerificationStatus] = useState(null);
 
   const fetchProfile = async () => {
@@ -29,7 +30,6 @@ export default function Dashboard() {
     fetchProfile();
   }, []);
 
-  // Realtime: watch this landlord's verification_status so the page
   // unlocks automatically the moment an admin approves them.
   useEffect(() => {
     if (!user || role !== 2) return;
@@ -46,7 +46,9 @@ export default function Dashboard() {
         },
         (payload) => {
           const newStatus = payload.new?.verification_status;
-          if (newStatus) setVerificationStatus(newStatus);
+          if (newStatus) 
+            setVerificationStatus(newStatus);
+            fetchProfile(); // refresh role/status in case of any other changesfe
         }
       )
       .subscribe();
@@ -79,7 +81,7 @@ export default function Dashboard() {
     }
 
     if (verificationStatus === "pending") {
-      return <PendingApprovalScreen />;
+      return <PendingApprovalScreen onLogout={async () => { await supabase.auth.signOut(); navigate("/login"); }} />;
     }
 
     if (verificationStatus === "verified") {
@@ -97,11 +99,8 @@ export default function Dashboard() {
 /* ─────────────────────────────────────────────────────────────
    Waiting screen shown after docs are uploaded
 ───────────────────────────────────────────────────────────── */
-function PendingApprovalScreen() {
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  };
+function PendingApprovalScreen({ onLogout }) {
+  const handleLogout = onLogout;
 
   return (
     <div style={pendingPage}>

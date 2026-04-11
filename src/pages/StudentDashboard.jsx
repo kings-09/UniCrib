@@ -82,12 +82,25 @@ function StudentDashboard({ user: propUser }) {
     const channel = supabase
       .channel("booking-updates")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "booking_requests" }, (payload) => {
-        if (payload.new.status === "confirmed") alert("Your booking has been approved!");
+        const updated = payload.new;
+        setMyRequests(prev => prev.map(r => r.id === updated.id ? { ...r, ...updated } : r));
+        if (updated.status === "approved" && updated.payment_status !== "paid") {
+          alert("🎉 Your booking request was approved! Please pay the deposit to confirm your room.");
+        }
+        if (updated.payment_status === "paid") {
+          alert("✅ Payment confirmed! Your room is secured.");
+        }
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
   }, []);
+
+  const cancelRequest = async (reqId) => {
+    if (!window.confirm("Cancel this booking request?")) return;
+    await supabase.from("booking_requests").delete().eq("id", reqId);
+    setMyRequests(prev => prev.filter(r => r.id !== reqId));
+  };
 
   const fetchRooms = async (propertyId) => {
     setLoadingRooms(true);
@@ -476,50 +489,78 @@ function StudentDashboard({ user: propUser }) {
           {activeTab === "requests" && (
             <div style={S.section}>
               <h2 style={S.sectionTitle}>📋 My Booking Requests</h2>
-              {myRequests.length === 0
-                ? <p style={{ color: "#9ca3af" }}>No booking requests yet.</p>
-                : myRequests.map(req => (
-                    <div key={req.id} style={S.requestCard}>
-                      <div>
-                        <p style={S.requestProp}>
-                          {req.properties?.title}
-                          {req.property_rooms?.room_number && (
-                            <span style={{ color: "#7c3aed", fontWeight: 700 }}> · {req.property_rooms.room_number}</span>
-                          )}
-                        </p>
-                        <span style={req.status === "confirmed" ? S.badgeGreen : req.status === "rejected" ? S.badgeRed : S.badgeYellow}>
-                          {req.status.toUpperCase()}
-                        </span>
+              {myRequests.length === 0 ? (
+                <p style={{ color: "#9ca3af" }}>No booking requests yet. Browse accommodations to request a room.</p>
+              ) : (
+                myRequests.map(req => {
+                  const isPaid     = req.payment_status === "paid";
+                  const isApproved = req.status === "approved";
+                  const isConfirmed= req.status === "confirmed";
+                  const isRejected = req.status === "rejected";
+                  const isPending  = req.status === "pending";
+                  const needsPay   = (isApproved || isConfirmed) && !isPaid;
+
+                  return (
+                    <div key={req.id} style={{
+                      ...S.requestCard,
+                      border: isPaid ? "1.5px solid #bbf7d0" :
+                              needsPay ? "1.5px solid #7c3aed" :
+                              isRejected ? "1.5px solid #fecaca" : "1.5px solid #e5e7eb",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}>
+                      {/* Property + status row */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
+                        <div>
+                          <p style={{ ...S.requestProp, marginBottom: "4px" }}>
+                            {req.properties?.title}
+                            {req.property_rooms?.room_number && (
+                              <span style={{ color: "#7c3aed", fontWeight: 700 }}> · {req.property_rooms.room_number}</span>
+                            )}
+                          </p>
+                          {/* Human-readable status */}
+                          {isPending  && <span style={S.badgeYellow}>⏳ Awaiting landlord approval</span>}
+                          {isApproved && !isPaid && <span style={{ ...S.badgeYellow, background: "#ede9fe", color: "#7c3aed" }}>✅ Approved — deposit required</span>}
+                          {isRejected && <span style={S.badgeRed}>❌ Request declined</span>}
+                          {isPaid     && <span style={S.badgeGreen}>🏠 Booking confirmed & paid</span>}
+                        </div>
                       </div>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
-                        {req.status === "confirmed" && req.payment_status === "unpaid" && req.payment_deadline && (
-                            <p style={{
-                                fontSize: "12px",
-                                color: new Date(req.payment_deadline) < new Date(Date.now() + 24*60*60*1000) ? "#dc2626" : "#d97706",
-                                fontWeight: 700,
-                                margin: "4px 0 0"
-                            }}> 
-                                ⏰ Pay by {new Date(req.payment_deadline).toLocaleDateString("en-ZW", { weekday: "short", month: "short", day: "numeric" })}
-                                {req.warnings_sent >= 1 && " — ⚠️ Warning sent"}
-                                {req.warnings_sent >= 2 && " — 🚨 Final warning"}
 
-                            </p>
-                            
+                      {/* Payment deadline warning */}
+                      {needsPay && req.payment_deadline && (
+                        <p style={{
+                          fontSize: "12px", fontWeight: 700, margin: 0,
+                          color: new Date(req.payment_deadline) < new Date(Date.now() + 24*60*60*1000) ? "#dc2626" : "#d97706",
+                        }}>
+                          ⏰ Pay by {new Date(req.payment_deadline).toLocaleDateString("en-ZW", { weekday: "short", month: "short", day: "numeric" })}
+                          {req.warnings_sent >= 1 && " · ⚠️ Warning sent"}
+                          {req.warnings_sent >= 2 && " · 🚨 Final warning"}
+                        </p>
+                      )}
+
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        {needsPay && (
+                          <button
+                            style={{ ...S.payBtn, flex: 1, padding: "10px", fontWeight: 800, fontSize: "14px" }}
+                            onClick={() => navigate(`/payment/${req.id}`)}
+                          >
+                            💳 Pay Deposit
+                          </button>
                         )}
-
-                        {req.status === "confirmed" && req.payment_status === "unpaid" && (
-                            <button style={S.payBtn} onClick={() => navigate(`/simulate-payment/${req.id}`)}>
-                                Pay Deposit
-                            </button>
-                        )}
-
-                        {req.payment_status === "paid" && (
-                          <span style={S.badgeGreen}>Payment Completed ✓</span>
+                        {(isPending || isApproved) && !isPaid && (
+                          <button
+                            style={{ padding: "8px 16px", borderRadius: "8px", border: "1.5px solid #fecaca", background: "white", color: "#dc2626", fontWeight: 700, fontSize: "13px", cursor: "pointer" }}
+                            onClick={() => cancelRequest(req.id)}
+                          >
+                            Cancel
+                          </button>
                         )}
                       </div>
                     </div>
-                  ))
-              }
+                  );
+                })
+              )}
             </div>
           )}
 
@@ -543,7 +584,7 @@ function StudentDashboard({ user: propUser }) {
                         </span>
                       </div>
                       {req.payment_status === "unpaid" && (
-                        <button style={S.payBtn} onClick={() => navigate(`/simulate-payment/${req.id}`)}>Pay Deposit</button>
+                        <button style={S.payBtn} onClick={() => navigate(`/payment/${req.id}`)}>Pay Deposit</button>
                       )}
                     </div>
                   ))
