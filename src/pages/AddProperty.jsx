@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect} from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import { supabase } from "../supabaseClient";
 import { useNavigate, useLocation } from "react-router-dom";
+import { CameraCapture } from "./LandlordVerification";
 import L from "leaflet";
 
 const AMENITIES = [
@@ -28,6 +29,7 @@ const STEPS = [
   { label: "Amenities", hint: "What's included"          },
   { label: "Location",  hint: "Map pin & address"        },
   { label: "Photos",    hint: "At least 3 clear photos"  },
+  { label: "Ownership", hint: "Live photo of proof of ownership" },
 ];
 
 export default function AddProperty() {
@@ -44,26 +46,23 @@ export default function AddProperty() {
   /* step 1 */
   const [title,        setTitle]        = useState(editData?.title        || "");
   const [propType,     setPropType]     = useState(editData?.property_type || "");
+  const [genderPolicy, setGenderPolicy] = useState(editData?.gender_policy || "");
   const [description,  setDescription]  = useState(editData?.description  || "");
   const [price,        setPrice]        = useState(editData?.price        ? String(editData.price) : "");
   const [rooms,        setRooms]        = useState(editData?.rooms        ? String(editData.rooms) : "1");
   const [maxOccupants, setMaxOccupants] = useState(editData?.max_occupants ? String(editData.max_occupants) : "1");
-
-  /* step 2 */
   const [amenities, setAmenities] = useState(editData?.amenities || []);
-
-  /* step 3 */
   const [address,  setAddress]  = useState(editData?.address || "");
   const [location2, setLocation2] = useState(
     editData?.latitude && editData?.longitude
       ? { lat: editData.latitude, lng: editData.longitude }
       : null
   );
-
-  /* step 4 — existing URLs kept separately; new File objects in images[] */
   const [existingUrls, setExistingUrls] = useState(editData?.image_urls || []);
   const [images,       setImages]       = useState([]);
   const [previews,     setPreviews]     = useState([]);
+  const [ownershipPhoto, setOwnershipPhoto] = useState(null);
+  const [ownershipFile,  setOwnershipFile]  = useState(null);
 
   useEffect(() => () => previews.forEach(URL.revokeObjectURL), [previews]);
 
@@ -116,6 +115,7 @@ export default function AddProperty() {
     if (step === 1) {
       if (!title.trim())   return "Please enter a property title.";
       if (!propType)       return "Please select a property type.";
+      if (!genderPolicy) return "Please select who this property is for.";
       if (!description.trim() || description.trim().length < 30)
         return "Please write a description (at least 30 characters).";
       if (!price || isNaN(Number(price)) || Number(price) <= 0)
@@ -123,17 +123,25 @@ export default function AddProperty() {
       if (!rooms || Number(rooms) < 1)
         return "Please enter the number of rooms (minimum 1).";
     }
+
     if (step === 2) {
       if (amenities.length === 0)
         return "Please select at least one amenity.";
     }
+
     if (step === 3) {
       if (!location2)
         return "Please pin your property location on the map.";
     }
+
     if (step === 4) {
       if (existingUrls.length + images.length < 3)
         return "Please have at least 3 photos of the property.";
+    }
+
+    if (step === 5) {
+      if (!ownershipFile)
+        return "Please take a live photo of your proof of ownership document.";
     }
     return "";
   };
@@ -181,6 +189,18 @@ export default function AddProperty() {
         newUrls.push(data.publicUrl);
       }
 
+      // Upload proof of ownership
+      let ownershipUrl = null;
+      if (ownershipFile) {
+        const fileName = `ownership-${user.id}-${Date.now()}.jpg`;
+        const { error: ownershipUploadError } = await supabase.storage
+          .from("property-images")
+          .upload(fileName, ownershipFile, { contentType: "image/jpeg" });
+        if (ownershipUploadError) { setError(ownershipUploadError.message); setLoading(false); return; }
+        const { data: ownershipData } = supabase.storage.from("property-images").getPublicUrl(fileName);
+        ownershipUrl = ownershipData.publicUrl;
+      }
+
       // Combine kept existing URLs with newly uploaded ones
       const finalImageUrls = [...existingUrls, ...newUrls];
 
@@ -192,10 +212,12 @@ export default function AddProperty() {
         longitude:     location2.lng,
         image_urls:    finalImageUrls,
         property_type: propType,
+        gender_policy: genderPolicy,
         rooms:         Number(rooms),
         max_occupants: Number(maxOccupants),
         amenities,
         address:       address.trim(),
+        ownership_proof_url: ownershipUrl,
       };
 
       if (isEdit) {
@@ -339,6 +361,22 @@ export default function AddProperty() {
                         style={{ ...S.typeChip, ...(propType === t ? S.typeChipActive : {}) }}
                         onClick={() => setPropType(t)}>
                         {t}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+
+                <Field label="Who is this property for? *">
+                  <div style={S.typeGrid}>
+                    {[
+                      { value: "girls_only", label: "👧 Girls Only" },
+                      { value: "boys_only",  label: "👦 Boys Only"  },
+                      { value: "mixed",      label: "🤝 Mixed"       },
+                    ].map(opt => (
+                      <button key={opt.value} type="button"
+                        style={{ ...S.typeChip, ...(genderPolicy === opt.value ? S.typeChipActive : {}) }}
+                        onClick={() => setGenderPolicy(opt.value)}>
+                        {opt.label}
                       </button>
                     ))}
                   </div>
@@ -557,6 +595,42 @@ export default function AddProperty() {
               </div>
             )}
 
+            {step === 5 && (
+              <div style={S.fields}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <p style={{ margin: 0, fontSize: "14px", color: "#374151" }}>
+                    Take a <strong>live photo</strong> of one of the following documents:
+                  </p>
+                  {[
+                    "Title deed",
+                    "Rates bill or utility bill in your name",
+                    "Agreement of sale",
+                  ].map(opt => (
+                    <div key={opt} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 12px", borderRadius: "8px", background: "#ede9fe", fontSize: "13px", color: "#4c1d95" }}>
+                      <span style={{ fontWeight: 700 }}>✓</span> {opt}
+                    </div>
+                  ))}
+                </div>
+
+                <CameraCapture
+                  label="Proof of Ownership"
+                  icon="📄"
+                  photo={ownershipPhoto}
+                  onCapture={(blob, url) => { setOwnershipFile(blob); setOwnershipPhoto(url); }}
+                  onRetake={() => { setOwnershipFile(null); setOwnershipPhoto(null); }}
+                  tips={[
+                    "Lay the document flat in good lighting",
+                    "All text must be clearly readable",
+                    "Include all edges of the document",
+                    "Avoid glare, blur, and shadows",
+                  ]}
+                />
+
+                <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", padding: "10px 14px", fontSize: "13px", color: "#92400e", fontWeight: 600 }}>
+                  ⚠ File uploads not accepted — photo must be taken live using your camera.
+                </div>
+              </div>
+            )}
             {/* ── ERROR ── */}
             {error && (
               <div style={S.errorBox}>

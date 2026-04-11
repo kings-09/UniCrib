@@ -42,17 +42,25 @@ export default function LandlordVerification({ onVerified }) {
     const { error: porErr } = await supabase.storage.from("verification-docs").upload(porName, porFile, { upsert: true });
     if (porErr) { setError(porErr.message); setUploading(false); return; }
 
-    const { data: idUrl }  = await supabase.storage.from("verification-docs").createSignedUrl(idName,  60 * 60 * 24 * 365);
-    const { data: porUrl } = await supabase.storage.from("verification-docs").createSignedUrl(porName, 60 * 60 * 24 * 365);
-
-    const { error: updateErr } = await supabase.from("user_profiles").update({
-      national_id_url: idUrl.signedUrl,
-      proof_of_residence_url: porUrl.signedUrl,
-      verification_status: "pending",
-      verification_note: null,
+    // Store paths (not signed URLs) — fresh URLs generated at review time
+    const { error: profileErr } = await supabase.from("user_profiles").update({
+      national_id_url:        idName,
+      proof_of_residence_url: porName,
+      verification_status:    "pending",
+      verification_note:      null,
     }).eq("id", user.id);
 
-    if (updateErr) { setError(updateErr.message); setUploading(false); return; }
+    if (profileErr) { setError(profileErr.message); setUploading(false); return; }
+
+    // Also insert into landlord_verifications for admin review panel
+    const { error: verErr } = await supabase.from("landlord_verifications").upsert({
+      user_id:      user.id,
+      status:       "pending",
+      id_front_url: idName,
+      id_back_url:  porName,
+    }, { onConflict: "user_id" });
+
+    if (verErr) { setError(verErr.message); setUploading(false); return; }
 
     setStatus("pending"); setStep(4); setUploading(false);
     if (onVerified) onVerified("pending");
@@ -191,8 +199,8 @@ export default function LandlordVerification({ onVerified }) {
   );
 }
 
-/* ─── CAMERA CAPTURE — fixed black screen bug ─── */
-function CameraCapture({ label, icon, photo, onCapture, onRetake, tips }) {
+/* ─── CAMERA CAPTURE ─── */
+export function CameraCapture({ label, icon, photo, onCapture, onRetake, tips }) {
   const videoRef  = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -370,23 +378,91 @@ export function VerificationReview() {
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
-    const base = "id, full_name, phone, landlord_company, landlord_area, national_id_url, proof_of_residence_url, verification_status, verification_note";
-    const { data: pend } = await supabase.from("user_profiles").select(base).eq("role_id", 2).eq("verification_status", "pending");
-    const { data: ver  } = await supabase.from("user_profiles").select("id, full_name, phone, verification_status, verified_at").eq("role_id", 2).eq("verification_status", "verified");
-    const { data: rej  } = await supabase.from("user_profiles").select("id, full_name, phone, verification_status, verification_note").eq("role_id", 2).eq("verification_status", "rejected");
-    setPending(pend || []); setVerified(ver || []); setRejected(rej || []);
+    const { data: pend, error: e1 } = await supabase
+      .from("landlord_verifications")
+      .select("*")
+      .eq("status", "pending");
+
+    const { data: ver } = await supabase
+      .from("landlord_verifications")
+      .select("*")
+      .eq("status", "approved");
+
+    const { data: rej } = await supabase
+      .from("landlord_verifications")
+      .select("*")
+      .eq("status", "rejected");
+
+    console.log("pend error:", e1); // remove after confirmed working
+
+    // Enrich each record with profile info + fresh signed URLs
+    const freshen = async (list) => Promise.all((list || []).map(async (l) => {
+      // Get profile info
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("full_name, phone, landlord_company, landlord_area")
+        .eq("id", l.user_id)
+        .single();
+
+      // Generate fresh signed URLs
+      const sign = async (path) => {
+        if (!path) return null;
+        const cleanPath = path.startsWith("http")
+          ? decodeURIComponent(path.split("/verification-docs/")[1]?.split("?")[0] || "")
+          : path;
+        if (!cleanPath) return null;
+        const { data, error } = await supabase.storage
+          .from("verification-docs")
+          .createSignedUrl(cleanPath, 7200);
+        console.log("signed url result:", cleanPath, data?.signedUrl, error); // remove after fix
+        return data?.signedUrl || null;
+      };
+
+      return {
+        ...l,
+        full_name:             profile?.full_name,
+        phone:                 profile?.phone,
+        landlord_company:      profile?.landlord_company,
+        landlord_area:         profile?.landlord_area,
+        national_id_url:       await sign(l.id_front_url),
+        proof_of_residence_url: await sign(l.id_back_url),
+        verification_status:   l.status,
+      };
+    }));
+
+    setPending(await freshen(pend));
+    setVerified(await freshen(ver));
+    setRejected(await freshen(rej));
   };
 
   const handleVerify = async (id) => {
     setLoading(true);
-    await supabase.from("user_profiles").update({ verification_status: "verified", verification_note: null, verified_at: new Date().toISOString() }).eq("id", id);
+    // Update verifications table
+    await supabase.from("landlord_verifications")
+      .update({ status: "approved", reviewed_at: new Date().toISOString() })
+      .eq("id", id);
+    // Keep user_profiles in sync
+    const item = pending.find(p => p.id === id);
+    if (item?.user_id) {
+      await supabase.from("user_profiles")
+        .update({ verification_status: "verified", verified_at: new Date().toISOString() })
+        .eq("id", item.user_id);
+    }
     await fetchAll(); setSelected(null); setLoading(false);
   };
 
   const handleReject = async (id) => {
     if (!note.trim()) { alert("Please provide a rejection reason."); return; }
     setLoading(true);
-    await supabase.from("user_profiles").update({ verification_status: "rejected", verification_note: note.trim() }).eq("id", id);
+    const item = pending.find(p => p.id === id);
+    await supabase.from("landlord_verifications")
+      .update({ status: "rejected", rejection_note: note.trim(), reviewed_at: new Date().toISOString() })
+      .eq("id", id);
+    if (item?.user_id) {
+      await supabase.from("user_profiles")
+        .update({ verification_status: "rejected", verification_note: note.trim() })
+        .eq("id", item.user_id);
+    }
     await fetchAll(); setSelected(null); setNote(""); setLoading(false);
   };
 
@@ -412,7 +488,9 @@ export function VerificationReview() {
                 <p style={VR.listName}>{l.full_name || "No name"}</p>
                 <p style={VR.listSub}>{l.phone || "No phone"}</p>
               </div>
-              <span style={l.verification_status === "verified" ? VR.badgeGreen : l.verification_status === "rejected" ? VR.badgeRed : VR.badgeOrange}>{l.verification_status}</span>
+                <span style={l.status === "approved" ? VR.badgeGreen : l.status === "rejected" ? VR.badgeRed : VR.badgeOrange}>
+                  {l.status === "approved" ? "verified" : l.status}
+                </span>
             </div>
           ))}
         </div>

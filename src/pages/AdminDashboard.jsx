@@ -25,8 +25,12 @@ function AdminDashboard() {
   const [createError,   setCreateError]   = useState("");
   const [createSuccess, setCreateSuccess] = useState("");
   const [pendingVerifications, setPendingVerifications] = useState([]);
+  const [profiles,        setProfiles]        = useState([]);
+  const [profileSearch,   setProfileSearch]   = useState("");
+  const [profileFilter,   setProfileFilter]   = useState("all");
+  const [deletingProfile, setDeletingProfile] = useState(null);
 
-  useEffect(() => { fetchAll(); fetchAdminStatus(); fetchAdmins(); fetchPendingVerifications()}, []);
+  useEffect(() => { fetchAll(); fetchAdminStatus(); fetchAdmins(); fetchPendingVerifications(); fetchProfiles()}, []);
 
   const fetchAll = async () => {
     const { data: pend } = await supabase.from("properties").select("*").eq("is_approved", false).is("rejection_reason", null);
@@ -44,6 +48,15 @@ function AdminDashboard() {
   const fetchAdmins = async () => {
     const { data } = await supabase.from("user_profiles").select("id, full_name, role_id, is_super_admin").eq("role_id", 3);
     setAdmins(data || []);
+  };
+
+  const fetchProfiles = async () => {
+    const { data } = await supabase
+      .from("user_profiles")
+      .select("id, full_name, phone, role_id, verification_status, created_at")
+      .in("role_id", [1, 2])
+      .order("created_at", { ascending: false });
+    setProfiles(data || []);
   };
 
   const fetchPendingVerifications = async () => {
@@ -98,6 +111,25 @@ function AdminDashboard() {
     await fetchAdmins();
   };
 
+  const deleteProfile = async (userId, roleId) => {
+    const label = roleId === 2 ? "landlord" : "student";
+    if (!window.confirm(`Permanently delete this ${label}'s account? This will also remove their properties, bookings and reviews.`)) return;
+    
+    setDeletingProfile(userId);
+
+    // Delete related data first
+    if (roleId === 2) {
+      await supabase.from("properties").delete().eq("user_id", userId);
+    }
+    await supabase.from("booking_requests").delete().eq("student_id", userId);
+    await supabase.from("reviews").delete().eq("user_id", userId);
+    await supabase.from("landlord_verifications").delete().eq("user_id", userId);
+    await supabase.from("user_profiles").delete().eq("id", userId);
+
+    setProfiles(prev => prev.filter(p => p.id !== userId));
+    setDeletingProfile(null);
+  };
+
   const AMENITY_LABELS = {
     wifi: "📶 WiFi", water: "💧 Water", electric: "⚡ Electricity", kitchen: "🍳 Kitchen",
     laundry: "🧺 Laundry", parking: "🚗 Parking", security: "🔒 Security", furnished: "🛋️ Furnished",
@@ -108,7 +140,7 @@ function AdminDashboard() {
     { key: "pending",  label: "Pending Review", count: pending.length  },
     { key: "approved", label: "Approved",        count: approved.length },
     { key: "verifications", label: "Verify Landlords", count: pendingVerifications.length },
-    ...(isSuperAdmin ? [{ key: "admins", label: "Manage Admins", count: admins.length }] : []),
+    ...(isSuperAdmin ? [{ key: "admins", label: "Manage Admins", count: admins.length },{ key: "profiles",  label: "Manage Profiles", count: profiles.length}] : []),
   ];
 
   return (
@@ -120,7 +152,7 @@ function AdminDashboard() {
           {tabs.map(t => (
             <button key={t.key} style={activeTab === t.key ? S.navItemActive : S.navItem} onClick={() => { setActiveTab(t.key); setSelected(null); }}>
               <span style={S.navIcon}>
-                {t.key === "pending" ? "⏳" : t.key === "approved" ? "✅" : "👑"},
+                {t.key === "pending" ? "⏳" : t.key === "approved" ? "✅" : t.key === "verifications" ? "🛡" : t.key === "profiles" ? "👥" : "👑"},
               </span>
               {t.label}
               {t.count > 0 && <span style={t.key === "pending" ? S.countBadgeOrange : S.countBadgeGreen}>{t.count}</span>}
@@ -204,6 +236,7 @@ function AdminDashboard() {
                 <Section title="🏠 Property Details">
                   <Row label="Type"          value={selected.property_type || "—"} />
                   <Row label="Price"         value={`$${selected.price}/month`} />
+                  <Row label="For" value={selected.gender_policy === "girls_only" ? "👧 Girls Only" : selected.gender_policy === "boys_only"  ? "👦 Boys Only" : selected.gender_policy === "mixed"      ? "🤝 Mixed" : "—" } />
                   <Row label="Rooms"         value={selected.rooms || "—"} />
                   <Row label="Max Occupants" value={selected.max_occupants || "—"} />
                   <Row label="Address"       value={selected.address || "—"} />
@@ -228,6 +261,29 @@ function AdminDashboard() {
                       <Row label="Company"   value={landlordInfo.landlord_company || "—"} />
                       <Row label="Area"      value={landlordInfo.landlord_area || "—"} />
                       {!landlordInfo.full_name && <p style={S.warningNote}>⚠️ Landlord has not completed their profile.</p>}
+
+                      {selected.ownership_proof_url && (
+                        <div style={{ marginTop: "12px" }}>
+                          <p style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                            Proof of Ownership
+                          </p>
+                          <a href={selected.ownership_proof_url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={selected.ownership_proof_url}
+                              alt="Ownership proof"
+                              style={{ width: "100%", maxHeight: "220px", objectFit: "cover", borderRadius: "10px", border: "1.5px solid #e5e7eb", display: "block" }}
+                            />
+                          </a>
+                          <p style={{ fontSize: "12px", color: "#6b7280", margin: "6px 0 0" }}>
+                            Click to open full size · Compare with landlord ID above
+                          </p>
+                        </div>
+                      )}
+                      {!selected.ownership_proof_url && (
+                        <div style={{ marginTop: "12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", fontSize: "13px", color: "#dc2626", fontWeight: 600 }}>
+                          ⚠ No proof of ownership submitted
+                        </div>
+                      )}
                     </>
                   )}
                 </Section>
@@ -238,9 +294,11 @@ function AdminDashboard() {
                   <CheckItem label="Location pinned"        ok={!!selected.latitude} />
                   <CheckItem label="Address provided"       ok={!!selected.address} />
                   <CheckItem label="Description written"    ok={!!selected.description} />
+                  <CheckItem label="Gender policy set" ok={!!selected.gender_policy} />
                   <CheckItem label="Property type set"      ok={!!selected.property_type} />
                   <CheckItem label="Landlord name on file"  ok={!!landlordInfo?.full_name} />
                   <CheckItem label="Landlord phone on file" ok={!!landlordInfo?.phone || !!landlordInfo?.landlord_whatsapp} />
+                  <CheckItem label="Proof of ownership submitted" ok={!!selected.ownership_proof_url} />
                 </Section>
 
                 <Section title="🗒 Internal Notes (optional)">
@@ -259,7 +317,7 @@ function AdminDashboard() {
                         <p style={S.rejectBoxTitle}>Provide a rejection reason <span style={{ color: "#dc2626" }}>*</span></p>
                         <p style={S.rejectBoxSub}>This will be visible to the landlord so they can fix and resubmit.</p>
                         <div style={S.rejectReasons}>
-                          {["Photos are unclear or insufficient","Location appears incorrect on map","Description is too vague","Price seems unrealistic","Suspected duplicate listing","Unable to verify landlord identity"].map(r => (
+                          {["Photos are unclear or insufficient","Location appears incorrect on map","Description is too vague","Price seems unrealistic","Suspected duplicate listing","Unable to verify landlord identity","No proof of ownership provided",].map(r => (
                             <button key={r} type="button" style={{ ...S.reasonChip, ...(rejectReason === r ? S.reasonChipActive : {}) }} onClick={() => setRejectReason(r)}>{r}</button>
                           ))}
                         </div>
@@ -332,16 +390,147 @@ function AdminDashboard() {
             ))}
           </div>
         )}
+
+        {activeTab === "profiles" && isSuperAdmin && (
+          <div style={{ padding: "0 32px 32px" }}>
+            <h2 style={{ ...S.sectionTitle, marginTop: "8px" }}>👥 Manage Profiles</h2>
+
+            {/* Search + filter bar */}
+            <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+              <input
+                style={{ flex: 1, minWidth: "200px", padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb", fontSize: "14px", outline: "none", fontFamily: "inherit" }}
+                placeholder="🔍 Search by name or phone…"
+                value={profileSearch}
+                onChange={e => setProfileSearch(e.target.value)}
+              />
+              <select
+                style={{ padding: "10px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb", fontSize: "14px", outline: "none", fontFamily: "inherit", background: "white" }}
+                value={profileFilter}
+                onChange={e => setProfileFilter(e.target.value)}
+              >
+                <option value="all">All Users</option>
+                <option value="1">Students only</option>
+                <option value="2">Landlords only</option>
+              </select>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display: "flex", gap: "12px", marginBottom: "24px", flexWrap: "wrap" }}>
+              {[
+                { label: "Total Users",  value: profiles.length,                              color: "#ede9fe" },
+                { label: "Students",     value: profiles.filter(p => p.role_id === 1).length, color: "#dbeafe" },
+                { label: "Landlords",    value: profiles.filter(p => p.role_id === 2).length, color: "#fef3c7" },
+                { label: "Verified",     value: profiles.filter(p => p.verification_status === "verified").length, color: "#dcfce7" },
+              ].map(stat => (
+                <div key={stat.label} style={{ background: stat.color, borderRadius: "12px", padding: "14px 20px", flex: "1 1 120px", minWidth: "100px" }}>
+                  <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 800, color: "#374151", textTransform: "uppercase", letterSpacing: "0.06em" }}>{stat.label}</p>
+                  <p style={{ margin: 0, fontSize: "24px", fontWeight: 900, color: "#111827" }}>{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Profile list */}
+            {profiles
+              .filter(p => {
+                const matchesRole   = profileFilter === "all" || String(p.role_id) === profileFilter;
+                const matchesSearch = !profileSearch ||
+                  p.full_name?.toLowerCase().includes(profileSearch.toLowerCase()) ||
+                  p.phone?.includes(profileSearch);
+                return matchesRole && matchesSearch;
+              })
+              .map(p => (
+                <div key={p.id} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  gap: "12px", flexWrap: "wrap",
+                  background: "white", border: "1px solid #e5e7eb", borderRadius: "12px",
+                  padding: "14px 18px", marginBottom: "10px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0 }}>
+                    {/* Avatar */}
+                    <div style={{
+                      width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0,
+                      background: p.role_id === 2 ? "linear-gradient(135deg,#f59e0b,#d97706)" : "linear-gradient(135deg,#7c3aed,#4f46e5)",
+                      color: "white", fontWeight: 800, fontSize: "16px",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {p.full_name?.charAt(0)?.toUpperCase() || "?"}
+                    </div>
+
+                    {/* Info */}
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#111827" }}>
+                        {p.full_name || "No name set"}
+                      </p>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af" }}>
+                        {p.phone || "No phone"} · Joined {new Date(p.created_at).toLocaleDateString("en-ZW", { month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Badges + delete */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span style={{
+                      padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700,
+                      background: p.role_id === 2 ? "#fef3c7" : "#ede9fe",
+                      color:      p.role_id === 2 ? "#d97706"  : "#7c3aed",
+                    }}>
+                      {p.role_id === 2 ? "🏠 Landlord" : "🎓 Student"}
+                    </span>
+
+                    {p.role_id === 2 && (
+                      <span style={{
+                        padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700,
+                        background: p.verification_status === "verified" ? "#dcfce7" : p.verification_status === "pending" ? "#fef3c7" : "#f3f4f6",
+                        color:      p.verification_status === "verified" ? "#16a34a" : p.verification_status === "pending" ? "#d97706" : "#9ca3af",
+                      }}>
+                        {p.verification_status === "verified" ? "✅ Verified" : p.verification_status === "pending" ? "⏳ Pending" : "Unverified"}
+                      </span>
+                    )}
+
+                    <button
+                      style={{
+                        padding: "7px 14px", borderRadius: "8px",
+                        border: "1.5px solid #fecaca", background: "#fef2f2",
+                        color: "#dc2626", fontWeight: 700, fontSize: "12px",
+                        cursor: "pointer", opacity: deletingProfile === p.id ? 0.6 : 1,
+                      }}
+                      disabled={deletingProfile === p.id}
+                      onClick={() => deleteProfile(p.id, p.role_id)}
+                    >
+                      {deletingProfile === p.id ? "Deleting…" : "🗑 Delete"}
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
+
+            {profiles.filter(p => {
+              const matchesRole   = profileFilter === "all" || String(p.role_id) === profileFilter;
+              const matchesSearch = !profileSearch ||
+                p.full_name?.toLowerCase().includes(profileSearch.toLowerCase()) ||
+                p.phone?.includes(profileSearch);
+              return matchesRole && matchesSearch;
+            }).length === 0 && (
+              <div style={{ textAlign: "center", padding: "48px 20px", color: "#9ca3af" }}>
+                <p style={{ fontSize: "36px", margin: "0 0 12px" }}>🔍</p>
+                <p style={{ fontWeight: 700 }}>No profiles found</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
     </div>
   );
 }
+
 function Section({ title, children }) {
   return <div style={S.section}><h3 style={S.sectionTitle}>{title}</h3>{children}</div>;
 }
+
 function Row({ label, value }) {
   return <div style={S.row}><span style={S.rowLabel}>{label}</span><span style={S.rowValue}>{value}</span></div>;
 }
+
 function CheckItem({ label, ok, warn }) {
   const color = ok ? "#16a34a" : warn ? "#d97706" : "#dc2626";
   const icon  = ok ? "✓" : warn ? "!" : "✕";

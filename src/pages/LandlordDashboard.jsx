@@ -128,17 +128,19 @@ function LandlordDashboard({ user }) {
       <ResponsiveSidebar>
         <div style={S.sidebarLogo}><span style={S.logoIcon}>🏠</span><span style={S.logoText}>UniCrib</span></div>
         <nav style={S.navMenu}>
+          <button style={{ ...S.navItem, marginTop: "8px", border: "2px solid #7c3aed", color: "#7c3aed", borderRadius: "10px", fontWeight: 700 }} onClick={() => navigate("/add-property")}>
+            <span style={S.navIcon}>➕</span> Add Property
+          </button>
+
           {[{ key: "properties", icon: "🏠", label: "My Properties" },
             { key: "requests", icon: "📋", label: "Booking Requests" },
-            { key: "verify", icon: "🛡", label: "Verify Identity" }
+            { key: "verify", icon: "🛡", label: "Verify Identity" },
+            { key: "profile",    icon: "👤", label: "My Profile" },
           ].map(({ key, icon, label }) => (
             <button key={key} style={activeTab === key ? S.navItemActive : S.navItem} onClick={() => setActiveTab(key)}>
               <span style={S.navIcon}>{icon}</span>{label}
             </button>
           ))}
-          <button style={{ ...S.navItem, marginTop: "8px", border: "2px solid #7c3aed", color: "#7c3aed", borderRadius: "10px", fontWeight: 700 }} onClick={() => navigate("/add-property")}>
-            <span style={S.navIcon}>➕</span> Add Property
-          </button>
           
         </nav>
         <button style={S.logoutBtn} onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>🚪 Logout</button>
@@ -222,6 +224,8 @@ function LandlordDashboard({ user }) {
             <LandlordVerification onVerified={(status) => console.log("Status:", status)} />
           )}
 
+          {activeTab === "profile" && <LandlordProfile />}
+
           {activeTab === "requests" && (
             <div style={S.section}>
               <h2 style={S.sectionTitle}>Booking Requests</h2>
@@ -252,6 +256,244 @@ function LandlordDashboard({ user }) {
         </div>
       </main>
     </div>
+  );
+}
+
+function LandlordProfile() {
+  const navigate = useNavigate();
+  const [loading,   setLoading]   = useState(true);
+  const [saving,    setSaving]    = useState(false);
+  const [deleting,  setDeleting]  = useState(false);
+  const [saveMsg,   setSaveMsg]   = useState("");
+  const [error,     setError]     = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteInput,       setDeleteInput]       = useState("");
+
+  const [fullName,          setFullName]          = useState("");
+  const [phone,             setPhone]             = useState("");
+  const [whatsapp,          setWhatsapp]          = useState("");
+  const [gender,            setGender]            = useState("");
+  const [company,           setCompany]           = useState("");
+  const [area,              setArea]              = useState("");
+  const [bio,               setBio]               = useState("");
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("full_name, phone, gender, landlord_whatsapp, landlord_company, landlord_area, bio")
+        .eq("id", user.id)
+        .single();
+      if (data) {
+        setFullName(data.full_name || "");
+        setPhone(data.phone || "");
+        setWhatsapp(data.landlord_whatsapp || "");
+        setGender(data.gender || "");
+        setCompany(data.landlord_company || "");
+        setArea(data.landlord_area || "");
+        setBio(data.bio || "");
+      }
+      setLoading(false);
+    };
+    fetch();
+  }, []);
+
+  const handleSave = async () => {
+    if (!fullName.trim()) { setError("Full name is required."); return; }
+    setSaving(true); setError(""); setSaveMsg("");
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error: err } = await supabase.from("user_profiles").update({
+      full_name:          fullName.trim(),
+      phone:              phone.trim()   || null,
+      gender:             gender         || null,
+      landlord_whatsapp:  whatsapp.trim()|| null,
+      landlord_company:   company.trim() || null,
+      landlord_area:      area.trim()    || null,
+      bio:                bio.trim()     || null,
+    }).eq("id", user.id);
+    if (err) { setError(err.message); }
+    else { setSaveMsg("Profile updated!"); setTimeout(() => setSaveMsg(""), 3000); }
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (deleteInput !== "DELETE") { setError("Type DELETE to confirm."); return; }
+    setDeleting(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    await supabase.from("properties").delete().eq("user_id", user.id);
+    await supabase.from("user_profiles").delete().eq("id", user.id);
+    await supabase.auth.signOut();
+    navigate("/");
+  };
+
+  if (loading) return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "300px", gap: "12px" }}>
+      <div style={{ width: "28px", height: "28px", border: "3px solid #ede9fe", borderTop: "3px solid #7c3aed", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <p style={{ color: "#7c3aed", fontWeight: 600 }}>Loading profile…</p>
+    </div>
+  );
+
+  const F = ({ label, children }) => (
+    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+      <label style={{ fontSize: "13px", fontWeight: 700, color: "#374151" }}>{label}</label>
+      {children}
+    </div>
+  );
+
+  const input = {
+    padding: "11px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb",
+    fontSize: "14px", outline: "none", width: "100%", boxSizing: "border-box",
+    fontFamily: "inherit", color: "#111827", background: "white",
+  };
+
+  return (
+    <>
+      <style>{`
+        @media (max-width: 480px) {
+          .lp-hero-avatar {
+            width: 52px !important;
+            height: 52px !important;
+            fontSize: 20px !important;
+          }
+          .lp-hero-name {
+            font-size: 17px !important;
+          }
+          .lp-save-btn {
+            font-size: 14px !important;
+          }
+          .lp-delete-confirm {
+            flex-direction: column !important;
+          }
+          .lp-delete-confirm button {
+            flex: unset !important;
+            width: 100% !important;
+          }
+        }
+      `}</style>
+    
+      <div style={{ padding: "clamp(12px, 4vw, 32px) clamp(12px, 4vw, 32px) 40px", maxWidth: "640px", width: "100%", boxSizing: "border-box" }}>
+
+        {/* ── HERO ── */}
+        <div style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", borderRadius: "16px", padding: "clamp(16px, 4vw, 28px)", marginBottom: "20px", marginTop: "8px"}}>
+          <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px, 3vw, 18px)", flexWrap: "wrap" }}>
+            <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "rgba(255,255,255,0.25)", border: "3px solid rgba(255,255,255,0.5)", color: "white", fontSize: "26px", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              {fullName?.charAt(0)?.toUpperCase() || "?"}
+            </div>
+            <div>
+              <h2 className="lp-hero-name" style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 900, color: "white" }}>{fullName || "Your Name"}</h2>
+              <p style={{ margin: "0 0 2px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>{company || "Individual landlord"}</p>
+              <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>{area || "Area not set"}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* ── PERSONAL ── */}
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "clamp(16px, 4vw, 24px)", marginBottom: "20px" }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 800, color: "#111827" }}>👤 Personal Details</h3>
+          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9ca3af" }}>Visible to students and admins when reviewing your listings.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <F label="Full Name *">
+              <input style={input} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Tinashe Moyo" />
+            </F>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
+              <F label="Phone Number">
+                <input style={input} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+263 77…" />
+              </F>
+              <F label="WhatsApp Number">
+                <input style={input} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+263 77…" />
+              </F>
+            </div>
+            <F label="Gender">
+              <select style={input} value={gender} onChange={e => setGender(e.target.value)}>
+                <option value="">Select…</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+                <option value="prefer_not">Prefer not to say</option>
+              </select>
+            </F>
+          </div>
+        </div>
+
+        {/* ── BUSINESS ── */}
+        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "clamp(16px, 4vw, 24px)", marginBottom: "20px" }}>
+          <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 800, color: "#111827" }}>🏢 Business Details</h3>
+          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9ca3af" }}>Helps students know who they're renting from.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <F label="Company / Trading Name">
+              <input style={input} value={company} onChange={e => setCompany(e.target.value)} placeholder="e.g. Brightlight Properties" />
+            </F>
+            <F label="Operating Area">
+              <input style={input} value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Belvedere, Harare" />
+            </F>
+            <F label="Bio / About">
+              <textarea style={{ ...input, minHeight: "90px", resize: "vertical" }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell students a bit about yourself or your properties…" />
+            </F>
+          </div>
+        </div>
+
+        {/* ── MESSAGES ── */}
+        {error   && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", color: "#dc2626", fontSize: "14px", marginBottom: "16px" }}>⚠ {error}</div>}
+        {saveMsg && <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px 16px", color: "#16a34a", fontSize: "14px", marginBottom: "16px" }}>✅ {saveMsg}</div>}
+
+        {/* ── SAVE ── */}
+        <button
+          className="lp-save-btn"
+          style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer", marginBottom: "32px", opacity: saving ? 0.65 : 1 }}
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? "Saving…" : "💾 Save Changes"}
+        </button>
+
+        {/* ── DANGER ZONE ── */}
+        <div style={{ background: "white", borderRadius: "16px", border: "1.5px solid #fecaca", padding: "clamp(16px, 4vw, 24px)" }}>
+          <h3 style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: 800, color: "#dc2626" }}>⚠️ Danger Zone</h3>
+          <p style={{ margin: "0 0 18px", fontSize: "14px", color: "#6b7280", lineHeight: 1.6 }}>
+            Deleting your account permanently removes your profile and all your property listings. This cannot be undone.
+          </p>
+          {!showDeleteConfirm ? (
+            <button
+              style={{ padding: "11px 24px", borderRadius: "10px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
+              onClick={() => setShowDeleteConfirm(true)}
+            >
+              🗑 Delete My Account
+            </button>
+          ) : (
+            <div style={{ background: "#fef2f2", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: 1.6 }}>
+                Type <strong>DELETE</strong> to permanently delete your account and all listings.
+              </p>
+              <input
+                style={{ ...input, border: "1.5px solid #fecaca" }}
+                placeholder="Type DELETE here"
+                value={deleteInput}
+                onChange={e => { setDeleteInput(e.target.value); setError(""); }}
+              />
+              {error && <p style={{ margin: 0, fontSize: "13px", color: "#dc2626", fontWeight: 600 }}>⚠ {error}</p>}
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button
+                  style={{ flex: 1, padding: "11px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
+                  onClick={() => { setShowDeleteConfirm(false); setDeleteInput(""); setError(""); }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="lp-delete-confirm"
+                  style={{ flex: 2, padding: "11px", borderRadius: "10px", border: "none", background: "#dc2626", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", opacity: deleting ? 0.6 : 1 }}
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting…" : "Yes, Delete Everything"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 

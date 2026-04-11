@@ -640,6 +640,27 @@ function StudentDashboard({ user: propUser }) {
               <span style={selectedProperty.is_full ? S.badgeRed : S.badgeGreen}>
                 {selectedProperty.is_full ? "FULL" : "AVAILABLE"}
               </span>
+
+              {selectedProperty.gender_policy && (
+                <span style={{
+                  display: "inline-block",
+                  marginLeft: "8px",
+                  padding: "4px 12px",
+                  borderRadius: "20px",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  background: selectedProperty.gender_policy === "girls_only" ? "#fce7f3"
+                            : selectedProperty.gender_policy === "boys_only"  ? "#eff6ff"
+                            : "#f0fdf4",
+                  color:      selectedProperty.gender_policy === "girls_only" ? "#9d174d"
+                            : selectedProperty.gender_policy === "boys_only"  ? "#1e40af"
+                            : "#166534",
+                }}>
+                  {selectedProperty.gender_policy === "girls_only" ? "👧 Girls Only"
+                : selectedProperty.gender_policy === "boys_only"  ? "👦 Boys Only"
+                : "🤝 Mixed"}
+                </span>
+              )}
             </div>
 
             {/* ── ROOMMATE SUGGESTIONS ── */}
@@ -1467,6 +1488,26 @@ function PropertyCard({ property, selectedInstitution, calculateDistance, onClic
       )}
       <div style={{ padding: "12px" }}>
         <h4 style={{ margin: "0 0 4px", fontSize: "15px", color: "#111827" }}>{property.title}</h4>
+        {property.gender_policy && (
+          <span style={{
+            display: "inline-block",
+            padding: "3px 10px",
+            borderRadius: "20px",
+            fontSize: "11px",
+            fontWeight: 700,
+            marginBottom: "6px",
+            background: property.gender_policy === "girls_only" ? "#fce7f3"
+                      : property.gender_policy === "boys_only"  ? "#eff6ff"
+                      : "#f0fdf4",
+            color:      property.gender_policy === "girls_only" ? "#9d174d"
+                      : property.gender_policy === "boys_only"  ? "#1e40af"
+                      : "#166534",
+          }}>
+            {property.gender_policy === "girls_only" ? "👧 Girls Only"
+          : property.gender_policy === "boys_only"  ? "👦 Boys Only"
+          : "🤝 Mixed"}
+          </span>
+        )}
         <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 6px" }}>
           ${property.price}<span style={{ fontSize: "12px", color: "#9ca3af", fontWeight: 400 }}>/mo</span>
         </p>
