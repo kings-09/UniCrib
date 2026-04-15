@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate, Link } from "react-router-dom";
 
@@ -23,6 +23,9 @@ export default function Signup() {
   const [role, setRole]   = useState("student");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // ✅ FIX 1: Guard against React StrictMode double-invocation
+  const submitting = useRef(false);
 
   /* ── step 1 ── */
   const [email, setEmail]       = useState("");
@@ -64,7 +67,10 @@ export default function Signup() {
     if (step === 1) {
       if (!email.trim() || !password || !confirm) return "Please fill in all fields.";
       if (!email.includes("@")) return "Enter a valid email.";
-      if (password.length < 6) return "Password must be at least 6 characters.";
+      if (password.length < 8) return "Password must be at least 8 characters.";
+      if (!/[a-z]/.test(password)) return "Password must include at least one lowercase letter.";
+      if (!/[A-Z]/.test(password)) return "Password must include at least one uppercase letter.";
+      if (!/[0-9]/.test(password)) return "Password must include at least one number.";
       if (password !== confirm) return "Passwords do not match.";
     }
     if (step === 2) {
@@ -88,8 +94,13 @@ export default function Signup() {
 
   /* ─── final submit ─── */
   const handleSubmit = async () => {
+    // ✅ FIX 1: Prevent double-fire from StrictMode or button double-click
+    if (submitting.current) return;
+
     const err = validate();
     if (err) { setError(err); return; }
+
+    submitting.current = true;
     setLoading(true);
     setError("");
 
@@ -98,18 +109,60 @@ export default function Signup() {
         email: email.trim(),
         password,
       });
+
       if (signupError) {
-        if (signupError.status === 422 || signupError.message.toLowerCase().includes("already")) {
+        const msg = signupError.message?.toLowerCase() ?? "";
+
+        // Supabase returns 422 "Unprocessable Content" for several reasons.
+        // We must check the message to distinguish them:
+        //   - Duplicate email  → "already registered" / "user already exists"
+        //   - Signups disabled → "signups not allowed" / "email signups are disabled"
+        //   - Bad email format → "unable to validate email address"
+        const isDuplicate =
+          msg.includes("already registered") ||
+          msg.includes("already exists") ||
+          msg.includes("user already");
+
+        const isDisabled =
+          msg.includes("signups not allowed") ||
+          msg.includes("signup is disabled") ||
+          msg.includes("email signups are disabled") ||
+          msg.includes("not allowed");
+
+        if (isDuplicate) {
           setError("An account with this email already exists. Try logging in instead.");
+        } else if (isDisabled) {
+          setError("New signups are temporarily disabled. Please contact support.");
         } else {
+          // Show the raw Supabase message for everything else (bad password, invalid email, etc.)
           setError(signupError.message);
         }
+
         setLoading(false);
+        submitting.current = false;
         return;
       }
 
+      // ✅ FIX 3: Supabase can return a user with an identity array length of 0
+      // when email confirmations are ON and the email was already registered
+      // (unconfirmed). In that case data.user exists but identities is empty.
       const userId = data?.user?.id;
-      if (!userId) { setError("User creation failed. Please try again."); setLoading(false); return; }
+
+      if (!userId) {
+        setError("User creation failed. Please try again.");
+        setLoading(false);
+        submitting.current = false;
+        return;
+      }
+
+      if (data.user.identities && data.user.identities.length === 0) {
+        // This is a "silent duplicate" – Supabase didn't error but the user
+        // already exists (unconfirmed). Treat it the same as a duplicate.
+        setError("An account with this email already exists. Try logging in instead.");
+        setLoading(false);
+        submitting.current = false;
+        return;
+      }
 
       const roleId = role === "student" ? 1 : 2;
 
@@ -138,10 +191,14 @@ export default function Signup() {
       };
 
       const { error: profileError } = await supabase.from("user_profiles").insert(profilePayload);
-      if (profileError) { setError(profileError.message); setLoading(false); return; }
+      if (profileError) {
+        setError(profileError.message);
+        setLoading(false);
+        submitting.current = false;
+        return;
+      }
 
       if (role === "landlord") {
-        // Landlords skip the login page and go straight to the verification gate
         navigate("/dashboard");
       } else {
         navigate("/login", { state: { message: "Account created! Check your email to confirm, then log in." } });
@@ -149,7 +206,9 @@ export default function Signup() {
     } catch (e) {
       setError("Something went wrong. Please try again.");
     }
+
     setLoading(false);
+    submitting.current = false;
   };
 
   const steps = role === "student" ? STEPS_STUDENT : STEPS_LANDLORD;
@@ -217,13 +276,21 @@ export default function Signup() {
 
               <Field label="Password">
                 <div style={S.pwWrap}>
-                  <input style={{ ...S.input, paddingRight: "44px" }} type={showPw ? "text" : "password"} placeholder="Min. 6 characters" value={password} onChange={e => setPassword(e.target.value)} />
+                  <input style={{ ...S.input, paddingRight: "44px" }} type={showPw ? "text" : "password"} placeholder="Min. 8 characters" value={password} onChange={e => setPassword(e.target.value)} />
                   <button style={S.eyeBtn} onClick={() => setShowPw(p => !p)} type="button">{showPw ? "🙈" : "👁"}</button>
                 </div>
+                {password.length > 0 && <PasswordRequirements password={password} />}
               </Field>
 
               <Field label="Confirm password">
                 <input style={S.input} type={showPw ? "text" : "password"} placeholder="Repeat password" value={confirm} onChange={e => setConfirm(e.target.value)} />
+                {confirm.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: password === confirm ? "#16a34a" : "#dc2626" }}>
+                      {password === confirm ? "✓ Passwords match" : "✗ Passwords don't match yet"}
+                    </span>
+                  </div>
+                )}
               </Field>
 
               <Field label="I am a…">
@@ -372,6 +439,51 @@ export default function Signup() {
 }
 
 /* ── helpers ── */
+
+// Password requirements checker
+const PW_RULES = [
+  { id: "len",   label: "At least 8 characters",        test: pw => pw.length >= 8 },
+  { id: "lower", label: "One lowercase letter (a–z)",   test: pw => /[a-z]/.test(pw) },
+  { id: "upper", label: "One uppercase letter (A–Z)",   test: pw => /[A-Z]/.test(pw) },
+  { id: "digit", label: "One number (0–9)",             test: pw => /[0-9]/.test(pw) },
+];
+
+function PasswordRequirements({ password }) {
+  return (
+    <div style={{
+      marginTop: "8px",
+      padding: "12px 14px",
+      background: "#f9fafb",
+      borderRadius: "10px",
+      border: "1.5px solid #e5e7eb",
+      display: "flex",
+      flexDirection: "column",
+      gap: "6px",
+    }}>
+      <p style={{ margin: 0, fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Password requirements</p>
+      {PW_RULES.map(rule => {
+        const ok = rule.test(password);
+        return (
+          <div key={rule.id} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <div style={{
+              width: "18px", height: "18px", borderRadius: "50%", flexShrink: 0,
+              background: ok ? "#dcfce7" : "#f3f4f6",
+              border: `1.5px solid ${ok ? "#16a34a" : "#d1d5db"}`,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.2s",
+            }}>
+              {ok && <span style={{ fontSize: "10px", color: "#16a34a", fontWeight: 900 }}>✓</span>}
+            </div>
+            <span style={{ fontSize: "13px", color: ok ? "#16a34a" : "#6b7280", fontWeight: ok ? 600 : 400, transition: "color 0.2s" }}>
+              {rule.label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Field({ label, children }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
@@ -409,7 +521,7 @@ const S = {
     overflow: "hidden",
     boxSizing: "border-box",
     flex: "1 1 360px",
-  },  
+  },
   leftContent: { position: "relative", zIndex: 2 },
   leftLogo: { fontSize: "22px", fontWeight: 900, color: "white", marginBottom: "40px" },
   leftHeading: { fontSize: "30px", fontWeight: 900, color: "white", lineHeight: 1.25, marginBottom: "12px" },
@@ -430,7 +542,7 @@ const S = {
     padding: "48px 20px",
     background: "#faf9ff",
     boxSizing: "border-box",
-  },  
+  },
   formWrap: { width: "100%", maxWidth: "520px" },
 
   /* progress */
@@ -440,14 +552,14 @@ const S = {
     marginBottom: "36px",
     flexWrap: "wrap",
     gap: "8px",
-  },  
+  },
   progressItem: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
     flex: "1 1 100px",
     minWidth: "100px",
-  },  
+  },
   progressCircle: { width: "30px", height: "30px", borderRadius: "50%", background: "#e5e7eb", color: "#9ca3af", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   progressActive: { background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white" },
   progressDone: { background: "#7c3aed", color: "white" },
@@ -470,13 +582,13 @@ const S = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: "14px",
-  },  
+  },
   row3: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
     gap: "12px",
   },
-  
+
   /* password */
   pwWrap: { position: "relative" },
   eyeBtn: { position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", fontSize: "16px" },
@@ -495,7 +607,7 @@ const S = {
     display: "flex",
     gap: "12px",
     flexWrap: "wrap",
-  },  
+  },
   toggleBtn: { display: "flex", alignItems: "center", gap: "10px", padding: "10px 16px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", cursor: "pointer" },
   toggleBtnOn: { border: "1.5px solid #ede9fe", background: "#faf5ff" },
   toggleThumb: { width: "32px", height: "18px", borderRadius: "9px", background: "#d1d5db", position: "relative", transition: "background 0.2s", flexShrink: 0 },
@@ -510,7 +622,7 @@ const S = {
     gap: "10px",
     marginBottom: "20px",
     flexWrap: "wrap",
-  },  
+  },
   backBtn: { padding: "13px 20px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "15px", cursor: "pointer" },
   nextBtn: { flex: 1, padding: "13px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer" },
   nextBtnLoading: { opacity: 0.6, cursor: "not-allowed" },

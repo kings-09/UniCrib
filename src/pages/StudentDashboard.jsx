@@ -116,11 +116,13 @@ function StudentDashboard({ user: propUser }) {
     if (error) {
       console.error(error);
       setPropertyRooms([]);
-    } else {
-      setPropertyRooms(data || []);
+      setLoadingRooms(false);
+      return [];           // ← return empty array on error
     }
 
+    setPropertyRooms(data || []);
     setLoadingRooms(false);
+    return data || [];     // ← return the data
   };
 
   const openProperty = async (p) => {
@@ -129,8 +131,13 @@ function StudentDashboard({ user: propUser }) {
     setSelectedRoom(null);
     setSelectedMatch(null);
 
-    await fetchRooms(p.id);
-    await fetchRoommateSuggestions(p.id);
+    const freshProfile = await fetchCurrentStudentProfile();
+
+    // Fetch rooms first, get the data back directly
+    const rooms = await fetchRooms(p.id);
+
+    // Pass rooms data directly so suggestions don't rely on state timing
+    await fetchRoommateSuggestions(p.id, freshProfile, rooms);
   };
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -174,78 +181,121 @@ function StudentDashboard({ user: propUser }) {
     return profile;
   };
 
-  const fetchRoommateSuggestions = async (propertyId) => {
+  // ── PROPERTY MODAL: Roommate MATCHING (preference-based suggestions for people already at this property)
+  // Only shows students who have a booking at THIS specific property so you can request to share with them.
+  const fetchRoommateSuggestions = async (propertyId, freshProfile, rooms = []) => {
     setLoadingSuggestions(true);
     setRoommateSuggestions([]);
     setSelectedMatch(null);
 
     try {
-      const profile = currentStudentProfile || await fetchCurrentStudentProfile();
-      if (!profile) {
-        setLoadingSuggestions(false);
-        return;
-      }
+      const profile = freshProfile || currentStudentProfile;
+      if (!profile) { setLoadingSuggestions(false); return; }
 
-      const hasPrefs =
-        profile.sleep_schedule &&
-        profile.cleanliness &&
-        profile.social_style;
+      const hasPrefs = profile.sleep_schedule && profile.cleanliness && profile.social_style;
+      if (!hasPrefs) { setLoadingSuggestions(false); return; }
 
-      if (!hasPrefs) {
-        setLoadingSuggestions(false);
-        return;
-      }
-
-      // 1. approved + paid tenants already in this property
-      const { data: approvedTenants } = await supabase
+      const { data: myOwnBooking } = await supabase
         .from("booking_requests")
-        .select("student_id, room_id, property_rooms(room_number)")
+        .select("room_id, status, payment_status")
         .eq("property_id", propertyId)
-        .eq("status", "confirmed")
-        .eq("payment_status", "paid");
+        .eq("student_id", profile.id)
+        .maybeSingle();
 
-      // 2. pending / approved students also requesting this property
-      const { data: otherRequests } = await supabase
+      const myRoomId = myOwnBooking?.room_id ?? null;
+
+      const { data: propertyBookings } = await supabase
         .from("booking_requests")
-        .select("student_id, status")
+        .select("student_id, status, payment_status, room_id, property_rooms(room_number)")
         .eq("property_id", propertyId)
-        .in("status", ["pending", "confirmed"]);
+        .neq("student_id", profile.id);
 
-      const ids = [
-        ...(approvedTenants || []).map(x => x.student_id),
-        ...(otherRequests || []).map(x => x.student_id),
-      ]
-        .filter(Boolean)
-        .filter(id => id !== profile.id);
-
-      const uniqueIds = [...new Set(ids)];
-
-      if (uniqueIds.length === 0) {
+      if (!propertyBookings || propertyBookings.length === 0) {
         setRoommateSuggestions([]);
         setLoadingSuggestions(false);
         return;
       }
 
-      const { data: profiles } = await supabase
+      const alreadyMyRoommateIds = new Set(
+        myRoomId && myOwnBooking?.status === "confirmed" && myOwnBooking?.payment_status === "paid"
+          ? propertyBookings
+              .filter(b =>
+                b.room_id === myRoomId &&
+                b.status === "confirmed" &&
+                b.payment_status === "paid"
+              )
+              .map(b => b.student_id)
+          : []
+      );
+
+      const filteredBookings = propertyBookings.filter(
+        b => !alreadyMyRoommateIds.has(b.student_id)
+      );
+
+      if (filteredBookings.length === 0) {
+        setRoommateSuggestions([]);
+        setLoadingSuggestions(false);
+        return;
+      }
+
+      // ✅ Use the passed-in rooms directly — no state timing issue
+      const availableBookings = filteredBookings.filter(b => {
+        if (!b.room_id) return true;
+        const room = rooms.find(r => r.id === b.room_id);  // ← uses param, not state
+        if (!room) return true;
+        return (room.current_occupants || 0) < (room.max_occupants || 1);
+      });
+
+      if (availableBookings.length === 0) {
+        setRoommateSuggestions([]);
+        setLoadingSuggestions(false);
+        return;
+      }
+
+      const studentIds = availableBookings.map(b => b.student_id);
+
+      const { data: propertyStudents } = await supabase
         .from("user_profiles")
         .select("id, full_name, institution, course, study_year, bio, sleep_schedule, cleanliness, social_style, smoking, pets, gender")
-        .in("id", uniqueIds);
+        .in("id", studentIds);
 
-      const scored = (profiles || [])
+      if (!propertyStudents || propertyStudents.length === 0) {
+        setRoommateSuggestions([]);
+        setLoadingSuggestions(false);
+        return;
+      }
+
+      const bookingMap = {};
+      for (const b of availableBookings) {
+        bookingMap[b.student_id] = b;
+      }
+
+      const scored = propertyStudents
         .map(p => {
-          const existingTenant = (approvedTenants || []).find(t => t.student_id === p.id);
-          const score = computeRoommateScore(profile, p);
+          const booking = bookingMap[p.id];
+          const score = Math.min(computeRoommateScore(profile, p), 100);
+          const isPaidTenant =
+            booking?.status === "confirmed" && booking?.payment_status === "paid";
+          const roomData = Array.isArray(booking?.property_rooms)
+            ? booking?.property_rooms?.[0]
+            : booking?.property_rooms;
 
           return {
             ...p,
             score,
             sharedTags: getSharedTags(profile, p),
-            room_number: existingTenant?.property_rooms?.room_number || null,
-            alreadyLivingHere: !!existingTenant,
+            room_id: booking?.room_id || null,
+            room_number: isPaidTenant ? roomData?.room_number : null,
+            alreadyLivingHere: isPaidTenant,
+            bookingStatus: booking?.status || null,
           };
         })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
+        .sort((a, b) => {
+          if (b.alreadyLivingHere !== a.alreadyLivingHere)
+            return b.alreadyLivingHere ? 1 : -1;
+          return b.score - a.score;
+        })
+        .slice(0, 8);
 
       setRoommateSuggestions(scored);
     } catch (err) {
@@ -275,7 +325,6 @@ function StudentDashboard({ user: propUser }) {
       return;
     }
 
-    // If choosing empty room, confirm room is still open
     if (selectedRoom) {
       const { data: room } = await supabase
         .from("property_rooms")
@@ -283,11 +332,7 @@ function StudentDashboard({ user: propUser }) {
         .eq("id", selectedRoom)
         .single();
 
-      if (!room) {
-        alert("Room not found.");
-        return;
-      }
-
+      if (!room) { alert("Room not found."); return; }
       if (room.current_occupants >= room.max_occupants) {
         alert("This room is now full. Please choose another.");
         fetchRooms(selectedProperty.id);
@@ -295,23 +340,22 @@ function StudentDashboard({ user: propUser }) {
       }
     }
 
+    // If matching with a roommate, auto-assign their room_id
+    const matchedRoomId = selectedMatch
+      ? roommateSuggestions.find(r => r.id === selectedMatch)?.room_id || null
+      : null;
+
     const payload = {
       property_id: selectedProperty.id,
       student_id: user.id,
       status: "pending",
-      room_id: selectedRoom || null,
+      room_id: matchedRoomId || selectedRoom || null,
       preferred_roommate_id: selectedMatch || null,
       request_type: selectedMatch ? "matched_roommate" : "empty_room",
     };
 
-    const { error } = await supabase
-      .from("booking_requests")
-      .insert([payload]);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
+    const { error } = await supabase.from("booking_requests").insert([payload]);
+    if (error) { alert(error.message); return; }
 
     alert(
       selectedMatch
@@ -381,8 +425,8 @@ function StudentDashboard({ user: propUser }) {
           {[
             { key: "overview",       icon: "🏠", label: "Dashboard"          },
             { key: "accommodations", icon: "🔍", label: "Find Accommodation"  },
-            { key: "roommates",      icon: "👥", label: "Roommates"   },
-            { key: "profile",        icon: "👤", label: "My Profile"  },
+            { key: "roommates",      icon: "👥", label: "Roommates"          },
+            { key: "profile",        icon: "👤", label: "My Profile"         },
           ].map(({ key, icon, label }) => (
             <button key={key} style={activeTab === key ? S.navItemActive : S.navItem} onClick={() => setActiveTab(key)}>
               <span style={S.navIcon}>{icon}</span>{label}
@@ -402,6 +446,7 @@ function StudentDashboard({ user: propUser }) {
           🚪 Logout
         </button>
       </ResponsiveSidebar>
+
       <main style={S.main}>
         <div style={S.headerBanner}>
           <div>
@@ -447,7 +492,7 @@ function StudentDashboard({ user: propUser }) {
                       <PropertyCard key={p.id} property={p}
                         selectedInstitution={selectedInstitution}
                         calculateDistance={calculateDistance}
-                        onClick={() => openProperty(p)} />   // ✅ uses openProperty
+                        onClick={() => openProperty(p)} />
                     ))}
                   </div>
                 )}
@@ -477,13 +522,14 @@ function StudentDashboard({ user: propUser }) {
                   <PropertyCard key={p.id} property={p}
                     selectedInstitution={selectedInstitution}
                     calculateDistance={calculateDistance}
-                    onClick={() => openProperty(p)} />   // ✅ uses openProperty
+                    onClick={() => openProperty(p)} />
                 ))}
               </div>
             </>
           )}
 
-          {activeTab === "roommates" && <RoommateMatching />}
+          {/* ── ROOMMATES TAB: shows actual confirmed roommates in your room ── */}
+          {activeTab === "roommates" && <MyRoommates />}
 
           {/* ── MY REQUESTS ── */}
           {activeTab === "requests" && (
@@ -509,7 +555,6 @@ function StudentDashboard({ user: propUser }) {
                       flexDirection: "column",
                       gap: "10px",
                     }}>
-                      {/* Property + status row */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
                         <div>
                           <p style={{ ...S.requestProp, marginBottom: "4px" }}>
@@ -518,7 +563,6 @@ function StudentDashboard({ user: propUser }) {
                               <span style={{ color: "#7c3aed", fontWeight: 700 }}> · {req.property_rooms.room_number}</span>
                             )}
                           </p>
-                          {/* Human-readable status */}
                           {isPending  && <span style={S.badgeYellow}>⏳ Awaiting landlord approval</span>}
                           {isApproved && !isPaid && <span style={{ ...S.badgeYellow, background: "#ede9fe", color: "#7c3aed" }}>✅ Approved — deposit required</span>}
                           {isRejected && <span style={S.badgeRed}>❌ Request declined</span>}
@@ -526,7 +570,6 @@ function StudentDashboard({ user: propUser }) {
                         </div>
                       </div>
 
-                      {/* Payment deadline warning */}
                       {needsPay && req.payment_deadline && (
                         <p style={{
                           fontSize: "12px", fontWeight: 700, margin: 0,
@@ -538,7 +581,6 @@ function StudentDashboard({ user: propUser }) {
                         </p>
                       )}
 
-                      {/* Action buttons */}
                       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                         {needsPay && (
                           <button
@@ -598,13 +640,12 @@ function StudentDashboard({ user: propUser }) {
         </div>
       </main>
 
-      {/* ── MODAL ── */}
+      {/* ── PROPERTY MODAL ── */}
       {selectedProperty && (
         <div style={S.overlay} onClick={() => setSelectedProperty(null)}>
           <div style={S.modal} onClick={e => e.stopPropagation()}>
             <button style={S.closeBtn} onClick={() => setSelectedProperty(null)}>✕</button>
 
-            {/* image carousel */}
             {selectedProperty.image_urls?.length > 0 && (
               <div style={S.modalImgWrap}>
                 <img src={selectedProperty.image_urls[modalImageIndex]} alt="Property" style={S.modalImg} />
@@ -622,7 +663,6 @@ function StudentDashboard({ user: propUser }) {
               </div>
             )}
 
-            {/* map buttons */}
             <div style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
               <a href={`https://www.google.com/maps/search/?api=1&query=${selectedProperty.latitude},${selectedProperty.longitude}`} target="_blank" rel="noopener noreferrer" style={S.mapBtn}>📍 View Location</a>
               {selectedInstitution && (
@@ -630,7 +670,6 @@ function StudentDashboard({ user: propUser }) {
               )}
             </div>
 
-            {/* title / price / description */}
             <h2 style={{ margin: "0 0 4px" }}>{selectedProperty.title}</h2>
             <p style={{ fontSize: "22px", fontWeight: 700, color: "#7c3aed", margin: "0 0 12px" }}>
               ${selectedProperty.price}<span style={{ fontSize: "14px", color: "#6b7280", fontWeight: 400 }}>/month</span>
@@ -640,43 +679,37 @@ function StudentDashboard({ user: propUser }) {
               <span style={selectedProperty.is_full ? S.badgeRed : S.badgeGreen}>
                 {selectedProperty.is_full ? "FULL" : "AVAILABLE"}
               </span>
-
               {selectedProperty.gender_policy && (
                 <span style={{
-                  display: "inline-block",
-                  marginLeft: "8px",
-                  padding: "4px 12px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: 700,
+                  display: "inline-block", marginLeft: "8px", padding: "4px 12px", borderRadius: "20px",
+                  fontSize: "12px", fontWeight: 700,
                   background: selectedProperty.gender_policy === "girls_only" ? "#fce7f3"
-                            : selectedProperty.gender_policy === "boys_only"  ? "#eff6ff"
-                            : "#f0fdf4",
+                            : selectedProperty.gender_policy === "boys_only"  ? "#eff6ff" : "#f0fdf4",
                   color:      selectedProperty.gender_policy === "girls_only" ? "#9d174d"
-                            : selectedProperty.gender_policy === "boys_only"  ? "#1e40af"
-                            : "#166534",
+                            : selectedProperty.gender_policy === "boys_only"  ? "#1e40af" : "#166534",
                 }}>
                   {selectedProperty.gender_policy === "girls_only" ? "👧 Girls Only"
-                : selectedProperty.gender_policy === "boys_only"  ? "👦 Boys Only"
-                : "🤝 Mixed"}
+                : selectedProperty.gender_policy === "boys_only"  ? "👦 Boys Only" : "🤝 Mixed"}
                 </span>
               )}
             </div>
 
-            {/* ── ROOMMATE SUGGESTIONS ── */}
+            {/* ── ROOMMATE MATCHING (preference-based, shown when browsing to request) ── */}
             {!selectedProperty.is_full && (
               <>
                 <hr style={{ margin: "20px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
-
-                <h3 style={{ margin: "0 0 12px", fontSize: "16px", fontWeight: 800, color: "#111827" }}>
-                  👥 Suggested Roommates in this House
+                <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 800, color: "#111827" }}>
+                  🤝 Find a Roommate Here
                 </h3>
+                <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#9ca3af" }}>
+                  Students already requesting or confirmed at {selectedProperty.title} — matched by lifestyle compatibility
+                </p>
 
                 {profileIncomplete ? (
                   <div style={S.reviewLocked}>
                     <span style={{ fontSize: "28px" }}>📝</span>
                     <p style={{ margin: "8px 0 0", fontWeight: 700, color: "#374151" }}>
-                      Complete your lifestyle profile to unlock roommate suggestions
+                      Complete your lifestyle profile to unlock roommate matching
                     </p>
                     <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#9ca3af" }}>
                       Add your sleep schedule, cleanliness and social style in your profile.
@@ -686,7 +719,7 @@ function StudentDashboard({ user: propUser }) {
                   <p style={{ color: "#9ca3af", fontSize: "14px" }}>Loading roommate suggestions…</p>
                 ) : roommateSuggestions.length === 0 ? (
                   <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-                    No roommate suggestions found for this house yet. You can choose an empty room below.
+                    No match found — choose a room below!
                   </p>
                 ) : (
                   <div style={S.matchSuggestionGrid}>
@@ -719,9 +752,24 @@ function StudentDashboard({ user: propUser }) {
                           {match.institution && (
                             <p style={S.matchSuggestionSub}>🎓 {match.institution}</p>
                           )}
+                          {match.course && (
+                            <p style={{ ...S.matchSuggestionSub, color: "#9ca3af", fontSize: "12px" }}>
+                              📚 {match.course}{match.study_year ? ` · Year ${match.study_year}` : ""}
+                            </p>
+                          )}
 
                           {match.alreadyLivingHere && match.room_number && (
                             <p style={S.matchSuggestionRoom}>🏠 Already in {match.room_number}</p>
+                          )}
+                          {match.alreadyLivingHere && !match.room_number && (
+                            <p style={S.matchSuggestionRoom}>🏠 Confirmed tenant</p>
+                          )}
+                          {!match.alreadyLivingHere && (
+                            <p style={{ ...S.matchSuggestionRoom, color: "#d97706" }}>
+                              {match.bookingStatus === "pending"  ? "⏳ Also requesting this property"
+                             : match.bookingStatus === "approved" ? "✅ Approved — awaiting payment"
+                             : "📋 Interested in this property"}
+                            </p>
                           )}
 
                           {match.sharedTags?.length > 0 && (
@@ -768,7 +816,6 @@ function StudentDashboard({ user: propUser }) {
                     <div style={S.roomGrid}>
                       {propertyRooms.map(room => {
                         const roomFull = (room.current_occupants || 0) >= (room.max_occupants || 1);
-
                         return (
                           <button
                             key={room.id}
@@ -787,13 +834,7 @@ function StudentDashboard({ user: propUser }) {
                           >
                             <span style={{ fontSize: "18px" }}>{roomFull ? "🔴" : "🟢"}</span>
                             <span style={{ fontWeight: 700, fontSize: "14px" }}>{room.room_number}</span>
-                            <span
-                              style={{
-                                fontSize: "12px",
-                                color: roomFull ? "#dc2626" : "#16a34a",
-                                fontWeight: 600,
-                              }}
-                            >
+                            <span style={{ fontSize: "12px", color: roomFull ? "#dc2626" : "#16a34a", fontWeight: 600 }}>
                               {roomFull
                                 ? `Full (${room.current_occupants || 0}/${room.max_occupants || 1})`
                                 : `${room.current_occupants || 0} of ${room.max_occupants || 1} occupied`}
@@ -833,7 +874,6 @@ function StudentDashboard({ user: propUser }) {
 
             {/* ── REVIEW SECTION ── */}
             <hr style={{ margin: "24px 0", border: "none", borderTop: "1px solid #e5e7eb" }} />
-
             {(() => {
               const confirmedBooking = myRequests.find(
                 r => r.property_id === selectedProperty.id &&
@@ -863,7 +903,6 @@ function StudentDashboard({ user: propUser }) {
               );
             })()}
 
-            {/* existing reviews */}
             {selectedProperty.reviews?.length > 0 && (
               <>
                 <h3 style={{ marginTop: "20px" }}>Reviews</h3>
@@ -890,6 +929,18 @@ function computeRoommateScore(a, b) {
   if (a?.social_style && b?.social_style && a.social_style === b.social_style) score += 15;
   if (a?.smoking === b?.smoking) score += 10;
   if (a?.pets === b?.pets) score += 5;
+  const sleepCompat = {
+    early_bird: { flexible: 8 },
+    night_owl:  { flexible: 8 },
+    flexible:   { early_bird: 8, night_owl: 8 },
+  };
+  if (
+    a?.sleep_schedule && b?.sleep_schedule &&
+    a.sleep_schedule !== b.sleep_schedule &&
+    sleepCompat[a.sleep_schedule]?.[b.sleep_schedule]
+  ) {
+    score += sleepCompat[a.sleep_schedule][b.sleep_schedule];
+  }
   return score;
 }
 
@@ -918,115 +969,111 @@ function getSharedTags(a, b) {
 
 function scoreMeta(score) {
   if (score >= 80) return { label: "Excellent match", color: "#16a34a", bg: "#dcfce7" };
-  if (score >= 60) return { label: "Good match", color: "#7c3aed", bg: "#ede9fe" };
-  if (score >= 40) return { label: "Fair match", color: "#d97706", bg: "#fef3c7" };
-  return { label: "Low match", color: "#dc2626", bg: "#fee2e2" };
+  if (score >= 60) return { label: "Good match",      color: "#7c3aed", bg: "#ede9fe" };
+  if (score >= 40) return { label: "Fair match",      color: "#d97706", bg: "#fef3c7" };
+  return               { label: "Low match",          color: "#dc2626", bg: "#fee2e2" };
 }
-function RoommateMatching() {
-    const [loading,         setLoading]         = useState(true);
-    const [currentProfile,  setCurrentProfile]  = useState(null);
-    const [currentProperty, setCurrentProperty] = useState(null);
-    const [housemates,      setHousemates]      = useState([]);
-    const [available,       setAvailable]       = useState([]);
-    const [mode,            setMode]            = useState("matches");
-    const [incomplete,      setIncomplete]      = useState(false);
-    const [myBooking, setMyBooking] = useState(null);
 
-    useEffect(() => { fetchData(); }, []);
+/* ─────────────────────────────────────────────────────────────
+   MY ROOMMATES TAB
+   Shows actual confirmed+paid roommates sharing your room.
+   When someone else pays for your room (or you pay for theirs),
+   they appear here with contact details + compatibility score.
+───────────────────────────────────────────────────────────── */
+function MyRoommates() {
+  const [loading,        setLoading]        = useState(true);
+  const [currentProfile, setCurrentProfile] = useState(null);
+  const [myBooking,      setMyBooking]      = useState(null);
+  const [roommates,      setRoommates]      = useState([]);
+  const [incomplete,     setIncomplete]     = useState(false);
+  const [noBooking,      setNoBooking]      = useState(false);
 
-    const fetchData = async () => {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+  useEffect(() => { fetchData(); }, []);
 
-  // 1. Get current student's profile
+  const fetchData = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // 1. Fetch current user's full profile
     const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("full_name, institution, course, study_year, bio, sleep_schedule, cleanliness, social_style, smoking, pets, gender")
-        .eq("id", user.id)
-        .single();
+      .from("user_profiles")
+      .select("id, full_name, phone, institution, course, study_year, bio, sleep_schedule, cleanliness, social_style, smoking, pets, gender")
+      .eq("id", user.id)
+      .single();
 
-    setCurrentProfile({ ...profile, id: user.id });
+    const fullProfile = { ...profile, id: user.id };
+    setCurrentProfile(fullProfile);
 
     const hasPrefs = profile?.sleep_schedule && profile?.cleanliness && profile?.social_style;
     if (!hasPrefs) { setIncomplete(true); setLoading(false); return; }
 
-  // 2. Find this student's confirmed + paid booking
+    // 2. Find current user's confirmed+paid booking to get their room_id
     const { data: myBookingData } = await supabase
-        .from("booking_requests")
-        .select(`
-        property_id,
+      .from("booking_requests")
+      .select(`
+        id,
         room_id,
-        properties(id, title, address, image_urls, price, rooms, max_occupants),
-        property_rooms(room_number, current_occupants, max_occupants)
-        `)
-        .eq("student_id", user.id)
-        .eq("status", "confirmed")
-        .eq("payment_status", "paid")
-        .maybeSingle();
+        property_id,
+        properties(id, title, address),
+        property_rooms(room_number, max_occupants, current_occupants)
+      `)
+      .eq("student_id", user.id)
+      .eq("status", "confirmed")
+      .eq("payment_status", "paid")
+      .maybeSingle();
+
+    if (!myBookingData?.room_id) {
+      setNoBooking(true);
+      setLoading(false);
+      return;
+    }
 
     setMyBooking(myBookingData);
 
-    if (myBookingData?.room_id) {
-        setCurrentProperty(myBookingData.properties);
+    // 3. Find all OTHER confirmed+paid bookings in the SAME room
+    const { data: roommateBookings } = await supabase
+      .from("booking_requests")
+      .select("student_id")
+      .eq("room_id", myBookingData.room_id)
+      .eq("status", "confirmed")
+      .eq("payment_status", "paid")
+      .neq("student_id", user.id);
 
-        const { data: roommates } = await supabase
-        .from("booking_requests")
-        .select("student_id")
-        .eq("room_id", myBookingData.room_id)       
-        .eq("status", "confirmed")
-        .eq("payment_status", "paid")
-        .neq("student_id", user.id);               
-
-        if (roommates?.length > 0) {
-        const ids = roommates.map(t => t.student_id);
-
-        const { data: tenantProfiles } = await supabase
-            .from("user_profiles")
-            .select("id, full_name, institution, course, study_year, bio, sleep_schedule, cleanliness, social_style, smoking, pets, gender")
-            .in("id", ids);
-
-        const scored = (tenantProfiles || []).map(p => ({
-            ...p,
-            score:      computeRoommateScore(profile, p),  // ✅ use top-level function
-            sharedTags: getSharedTags(profile, p),          // ✅ use top-level function
-        })).sort((a, b) => b.score - a.score);
-
-        setHousemates(scored);
-        } else {
-        setHousemates([]);
-        }
-
-    } else if (myBookingData?.property_id) {
-        // Approved but no specific room assigned yet
-        setCurrentProperty(myBookingData.properties);
-        setHousemates([]);
-        setMode("matches");
-    } else {
-        // No booking at all — show browse mode
-        setMode("browse");
-        const { data: props } = await supabase
-        .from("properties")
-        .select("*, reviews(*)")
-        .eq("is_approved", true)
-        .eq("is_full", false);
-        setAvailable(props || []);
+    if (!roommateBookings || roommateBookings.length === 0) {
+      setRoommates([]);
+      setLoading(false);
+      return;
     }
 
+    // 4. Fetch full profiles of those roommates (includes phone for contact)
+    const ids = roommateBookings.map(b => b.student_id);
+    const { data: roommateProfiles } = await supabase
+      .from("user_profiles")
+      .select("id, full_name, phone, institution, course, study_year, bio, sleep_schedule, cleanliness, social_style, smoking, pets, gender")
+      .in("id", ids);
+
+    const scored = (roommateProfiles || []).map(p => ({
+      ...p,
+      score:      Math.min(computeRoommateScore(fullProfile, p), 100),
+      sharedTags: getSharedTags(fullProfile, p),
+    })).sort((a, b) => b.score - a.score);
+
+    setRoommates(scored);
     setLoading(false);
-    };
+  };
 
   const scoreColor = (s) => {
     if (s >= 80) return { bg: "#dcfce7", color: "#16a34a", label: "Excellent" };
     if (s >= 60) return { bg: "#ede9fe", color: "#7c3aed", label: "Good"      };
     if (s >= 40) return { bg: "#fef3c7", color: "#d97706", label: "Fair"      };
-    return               { bg: "#fee2e2", color: "#dc2626", label: "Low"       };
+    return             { bg: "#fee2e2", color: "#dc2626", label: "Low"        };
   };
 
   if (loading) return (
     <div style={RM.centered}>
       <div style={RM.spinner} />
-      <p style={{ color: "#7c3aed", fontWeight: 600, margin: 0 }}>Finding your matches…</p>
+      <p style={{ color: "#7c3aed", fontWeight: 600, margin: 0 }}>Loading your roommates…</p>
     </div>
   );
 
@@ -1034,42 +1081,33 @@ function RoommateMatching() {
     <div style={RM.centered}>
       <div style={RM.emptyIllustration}>🛋️</div>
       <h3 style={RM.emptyTitle}>Complete your profile first</h3>
-      <p style={RM.emptySub}>Fill in your lifestyle preferences — sleep schedule, cleanliness and social style — to unlock roommate matching.</p>
+      <p style={RM.emptySub}>Fill in your sleep schedule, cleanliness and social style to unlock compatibility scores.</p>
     </div>
   );
 
-    const fetchAvailableProperties = async () => {
-        const { data: props, error } = await supabase
-            .from("properties")
-            .select("*, reviews(*)")
-            .eq("is_approved", true)
-            .eq("is_full", false);
-
-        if (error) {
-            console.error("Available properties error:", error);
-            setAvailable([]);
-            return;
-        }
-
-        setAvailable(props || []);
-    };
+  const roomLabel = myBooking?.property_rooms?.room_number || "your room";
+  const propTitle = myBooking?.properties?.title || "your property";
 
   return (
     <div style={RM.page}>
+      {/* Header */}
       <div style={RM.header}>
         <div>
           <h2 style={RM.headerTitle}>👥 My Roommates</h2>
-            <p style={RM.headerSub}>
-                {currentProperty
-                    ? housemates.length > 0
-                        ? `${housemates.length} roommate${housemates.length !== 1 ? "s" : ""} sharing ${myBooking?.property_rooms?.room_number || "your room"} at ${currentProperty.title}`
-                        : `You don't have a roommate yet in ${myBooking?.property_rooms?.room_number || "your room"} at ${currentProperty.title}`
-                    : "You're not in a property yet — browse available rooms below"}
-            </p>
+          <p style={RM.headerSub}>
+            {noBooking
+              ? "You don't have an active tenancy yet"
+              : roommates.length > 0
+                ? `${roommates.length} roommate${roommates.length !== 1 ? "s" : ""} sharing ${roomLabel} at ${propTitle}`
+                : `You don't have a roommate yet in ${roomLabel} at ${propTitle}`}
+          </p>
         </div>
-        {currentProperty && <div style={RM.propertyChip}>🏠 {currentProperty.title}</div>}
+        {myBooking && (
+          <div style={RM.propertyChip}>🏠 {propTitle} · {roomLabel}</div>
+        )}
       </div>
 
+      {/* Your lifestyle profile */}
       {currentProfile && (
         <div style={RM.myPrefsCard}>
           <p style={RM.myPrefsTitle}>YOUR LIFESTYLE PROFILE</p>
@@ -1083,134 +1121,107 @@ function RoommateMatching() {
         </div>
       )}
 
-      {mode === "matches" && (
-        <>
-          {housemates.length === 0 ? (
-            <div style={RM.emptyCard}>
-                <div style={RM.emptyIllustration}>🏠</div>
-                <h3 style={RM.emptyTitle}>No roommate yet</h3>
-                <p style={RM.emptySub}>
-                You're currently the only one in <strong>{myBooking?.property_rooms?.room_number || "your room"}</strong> at <strong>{currentProperty?.title}</strong>. 
-                Once another student books and pays for the same room, they'll appear here with a compatibility score.
-                </p>
-                <button
-                    style={RM.secondaryBtn}
-                    onClick={async () => {
-                        setMode("browse");
-                        await fetchAvailableProperties();
-                    }}
-                    >
-                    🔍 Browse Other Available Rooms
-                </button>
-            </div>
-          ) : (
-            <>
-              <p style={RM.resultsCount}>{housemates.length} housemate{housemates.length !== 1 ? "s" : ""} found</p>
-              <div style={RM.matchGrid}>
-                {housemates.map(m => {
-                  const sc = scoreColor(m.score);
-                  return (
-                    <div key={m.id} style={RM.matchCard}>
-                      <div style={RM.matchCardTop}>
-                        <div style={RM.matchAvatar}>{m.full_name?.charAt(0)?.toUpperCase() || "?"}</div>
-                        <div style={{ ...RM.scoreBadge, background: sc.bg, color: sc.color }}>
-                          <span style={RM.scorePct}>{m.score}%</span>
-                          <span style={RM.scoreLabel}>{sc.label} match</span>
-                        </div>
-                      </div>
-                      <h4 style={RM.matchName}>{m.full_name || "Anonymous"}</h4>
-                      {m.institution && <p style={RM.matchInstitution}>🎓 {m.institution}</p>}
-                      {m.course      && <p style={RM.matchCourse}>{m.course}{m.study_year ? ` · Year ${m.study_year}` : ""}</p>}
-                      <div style={RM.compatBarWrap}>
-                        <div style={RM.compatBarBg}>
-                          <div style={{ ...RM.compatBarFill, width: `${m.score}%`, background: sc.color }} />
-                        </div>
-                      </div>
-                      {m.sharedTags?.length > 0 && (
-                        <div style={RM.sharedTagsWrap}>
-                          <p style={RM.sharedTagsTitle}>YOU BOTH…</p>
-                          <div style={RM.sharedTags}>
-                            {m.sharedTags.map((t, i) => (
-                              <span key={i} style={RM.sharedTag}>{t.icon} {t.label}</span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ textAlign: "center", marginTop: "8px" }}>
-                <button
-                    style={RM.secondaryBtn}
-                    onClick={async () => {
-                        setMode("browse");
-                        await fetchAvailableProperties();
-                    }}
-                    >
-                    🔍 Browse Other Available Rooms Too
-                </button>
-              </div>
-            </>
-          )}
-        </>
+      {/* No active booking */}
+      {noBooking && (
+        <div style={RM.emptyCard}>
+          <div style={RM.emptyIllustration}>🏠</div>
+          <h3 style={RM.emptyTitle}>No active booking yet</h3>
+          <p style={RM.emptySub}>
+            Once you have a confirmed and paid booking, your roommates will appear here with contact details and a compatibility score.
+          </p>
+        </div>
       )}
 
-      {mode === "browse" && (
+      {/* Has booking but no roommates yet */}
+      {!noBooking && roommates.length === 0 && (
+        <div style={RM.emptyCard}>
+          <div style={RM.emptyIllustration}>🏠</div>
+          <h3 style={RM.emptyTitle}>No roommate yet</h3>
+          <p style={RM.emptySub}>
+            You're currently the only confirmed tenant in <strong>{roomLabel}</strong> at <strong>{propTitle}</strong>.
+            As soon as another student confirms and pays for a bed in your room, they'll appear here automatically.
+          </p>
+        </div>
+      )}
+
+      {/* Roommate cards */}
+      {roommates.length > 0 && (
         <>
-          {currentProperty && (
-            <button style={RM.backBtn} onClick={() => setMode("matches")}>← Back to Housemates</button>
-          )}
-          <div style={RM.browseHeader}>
-            <h3 style={RM.browseTitle}>🏠 Available Rooms</h3>
-            <p style={RM.browseSub}>
-              These properties have rooms with space available. Join a room with another student or choose one with fewer occupants.
-            </p>
-          </div>
-          {available.length === 0 ? (
-            <div style={RM.emptyCard}>
-              <div style={RM.emptyIllustration}>🏡</div>
-              <h3 style={RM.emptyTitle}>No available properties</h3>
-              <p style={RM.emptySub}>Check back soon — new listings are added regularly.</p>
-            </div>
-          ) : (
-            <div style={RM.browseGrid}>
-              {available.map(p => {
-                const avgRating = p.reviews?.length
-                  ? (p.reviews.reduce((a, r) => a + r.rating, 0) / p.reviews.length).toFixed(1)
-                  : null;
-                return (
-                  <div key={p.id} style={RM.browseCard}>
-                    {p.image_urls?.length > 0 && (
-                      <div style={RM.browseImgWrap}>
-                        <img src={p.image_urls[0]} alt={p.title} style={RM.browseImg} />
-                        <span style={RM.availableBadge}>AVAILABLE</span>
-                      </div>
-                    )}
-                    <div style={RM.browseBody}>
-                      <h4 style={RM.browseCardTitle}>{p.title}</h4>
-                      {p.address && <p style={RM.browseAddress}>📍 {p.address}</p>}
-                      <div style={RM.browseFooter}>
-                        <div>
-                          <span style={RM.browsePrice}>${p.price}</span>
-                          <span style={RM.browsePriceSub}>/mo</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          {avgRating && <span style={RM.ratingChip}>⭐ {avgRating}</span>}
-                          {p.rooms   && <span style={RM.roomsChip}>🛏 {p.rooms} room{p.rooms > 1 ? "s" : ""}</span>}
-                        </div>
-                      </div>
+          <p style={RM.resultsCount}>{roommates.length} roommate{roommates.length !== 1 ? "s" : ""} in your room</p>
+          <div style={RM.matchGrid}>
+            {roommates.map(m => {
+              const sc = scoreColor(m.score);
+              return (
+                <div key={m.id} style={RM.matchCard}>
+                  {/* Top row: avatar + score */}
+                  <div style={RM.matchCardTop}>
+                    <div style={RM.matchAvatar}>{m.full_name?.charAt(0)?.toUpperCase() || "?"}</div>
+                    <div style={{ ...RM.scoreBadge, background: sc.bg, color: sc.color }}>
+                      <span style={RM.scorePct}>{m.score}%</span>
+                      <span style={RM.scoreLabel}>{sc.label} match</span>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
+
+                  {/* Name + academic info */}
+                  <h4 style={RM.matchName}>{m.full_name || "Anonymous"}</h4>
+                  {m.institution && <p style={RM.matchInstitution}>🎓 {m.institution}</p>}
+                  {m.course      && (
+                    <p style={RM.matchCourse}>
+                      {m.course}{m.study_year ? ` · Year ${m.study_year}` : ""}
+                    </p>
+                  )}
+
+                  {/* ── CONTACT DETAILS ── */}
+                  <div style={RM.contactBox}>
+                    <p style={RM.contactTitle}>📬 CONTACT YOUR ROOMMATE</p>
+                    {m.phone ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        
+                          <p>📞 {m.phone}</p>
+                        
+                      </div>
+                    ) : (
+                      <div style={RM.contactNoneWrap}>
+                        <span style={{ fontSize: "22px" }}>📵</span>
+                        <p style={RM.contactNone}>
+                          {m.full_name?.split(" ")[0] || "Your roommate"} hasn't added a phone number yet.
+                          Ask them to update their profile so you can connect!
+                        </p>
+                      </div>
+                    )}
+                    {m.bio && (
+                      <p style={RM.contactBio}>"{m.bio}"</p>
+                    )}
+                  </div>
+
+                  {/* Compatibility bar */}
+                  <div style={RM.compatBarWrap}>
+                    <div style={RM.compatBarBg}>
+                      <div style={{ ...RM.compatBarFill, width: `${m.score}%`, background: sc.color }} />
+                    </div>
+                  </div>
+
+                  {/* Shared lifestyle tags */}
+                  {m.sharedTags?.length > 0 && (
+                    <div style={RM.sharedTagsWrap}>
+                      <p style={RM.sharedTagsTitle}>YOU BOTH…</p>
+                      <div style={RM.sharedTags}>
+                        {m.sharedTags.map((t, i) => (
+                          <span key={i} style={RM.sharedTag}>{t.icon} {t.label}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </>
       )}
     </div>
   );
 }
+
 function StudentProfile({ onDeleted }) {
   const [loading,   setLoading]   = useState(true);
   const [saving,    setSaving]    = useState(false);
@@ -1490,22 +1501,12 @@ function PropertyCard({ property, selectedInstitution, calculateDistance, onClic
         <h4 style={{ margin: "0 0 4px", fontSize: "15px", color: "#111827" }}>{property.title}</h4>
         {property.gender_policy && (
           <span style={{
-            display: "inline-block",
-            padding: "3px 10px",
-            borderRadius: "20px",
-            fontSize: "11px",
-            fontWeight: 700,
-            marginBottom: "6px",
-            background: property.gender_policy === "girls_only" ? "#fce7f3"
-                      : property.gender_policy === "boys_only"  ? "#eff6ff"
-                      : "#f0fdf4",
-            color:      property.gender_policy === "girls_only" ? "#9d174d"
-                      : property.gender_policy === "boys_only"  ? "#1e40af"
-                      : "#166534",
+            display: "inline-block", padding: "3px 10px", borderRadius: "20px", fontSize: "11px",
+            fontWeight: 700, marginBottom: "6px",
+            background: property.gender_policy === "girls_only" ? "#fce7f3" : property.gender_policy === "boys_only" ? "#eff6ff" : "#f0fdf4",
+            color:      property.gender_policy === "girls_only" ? "#9d174d" : property.gender_policy === "boys_only" ? "#1e40af" : "#166534",
           }}>
-            {property.gender_policy === "girls_only" ? "👧 Girls Only"
-          : property.gender_policy === "boys_only"  ? "👦 Boys Only"
-          : "🤝 Mixed"}
+            {property.gender_policy === "girls_only" ? "👧 Girls Only" : property.gender_policy === "boys_only" ? "👦 Boys Only" : "🤝 Mixed"}
           </span>
         )}
         <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 6px" }}>
@@ -1522,49 +1523,38 @@ function PropertyCard({ property, selectedInstitution, calculateDistance, onClic
   );
 }
 
-
-/* ── Roommate matching styles ── */
+/* ── Roommate tab styles ── */
 const RM = {
-  page: {
-    padding: "0 16px 24px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },  
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingTop: "24px",
-    flexWrap: "wrap",
-    gap: "12px",
-  },
+  page: { padding: "0 16px 24px", display: "flex", flexDirection: "column", gap: "20px" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", paddingTop: "24px", flexWrap: "wrap", gap: "12px" },
   headerTitle: { fontSize: "20px", fontWeight: 900, color: "#111827", margin: "0 0 4px" },
   headerSub: { fontSize: "14px", color: "#6b7280", margin: 0 },
-  propertyChip: { background: "#ede9fe", color: "#7c3aed", padding: "8px 16px", borderRadius: "20px", fontSize: "13px", fontWeight: 700 },
+  propertyChip: { background: "#ede9fe", color: "#7c3aed", padding: "8px 16px", borderRadius: "20px", fontSize: "13px", fontWeight: 700, whiteSpace: "nowrap" },
   myPrefsCard: { background: "white", borderRadius: "14px", border: "1px solid #e5e7eb", padding: "16px 20px" },
   myPrefsTitle: { fontSize: "12px", fontWeight: 800, color: "#9ca3af", letterSpacing: "0.08em", margin: "0 0 10px" },
   myPrefsTags: { display: "flex", flexWrap: "wrap", gap: "8px" },
   prefTag: { background: "#f5f3ff", color: "#7c3aed", padding: "5px 12px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, border: "1px solid #ede9fe" },
   resultsCount: { fontSize: "13px", color: "#9ca3af", fontWeight: 600, margin: 0 },
-  matchGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: "20px",
-  },  
-  matchCard: { background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "20px", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" },
-  matchCardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "14px" },
+  matchGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px" },
+  matchCard: { background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "20px", boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", gap: "10px" },
+  matchCardTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start" },
   matchAvatar: { width: "52px", height: "52px", borderRadius: "50%", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontSize: "20px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" },
   scoreBadge: { display: "flex", flexDirection: "column", alignItems: "flex-end", padding: "8px 12px", borderRadius: "12px" },
   scorePct: { fontSize: "20px", fontWeight: 900, lineHeight: 1 },
   scoreLabel: { fontSize: "11px", fontWeight: 700, marginTop: "2px" },
-  matchName: { fontSize: "16px", fontWeight: 800, color: "#111827", margin: "0 0 4px" },
-  matchInstitution: { fontSize: "13px", color: "#2563eb", margin: "0 0 2px", fontWeight: 600 },
-  matchCourse: { fontSize: "13px", color: "#9ca3af", margin: "0 0 14px" },
-  compatBarWrap: { marginBottom: "14px" },
+  matchName: { fontSize: "16px", fontWeight: 800, color: "#111827", margin: 0 },
+  matchInstitution: { fontSize: "13px", color: "#2563eb", margin: 0, fontWeight: 600 },
+  matchCourse: { fontSize: "13px", color: "#9ca3af", margin: 0 },
+  /* ── Contact box: only shown to confirmed roommates ── */
+  contactBox: { background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px 14px" },
+  contactTitle: { fontSize: "11px", fontWeight: 800, color: "#16a34a", margin: "0 0 6px", letterSpacing: "0.06em" },
+  contactPhone: { display: "block", fontSize: "14px", fontWeight: 700, color: "#111827", textDecoration: "none", marginBottom: "4px" },
+  contactNone: { fontSize: "13px", color: "#9ca3af", margin: 0, fontStyle: "italic" },
+  contactBio: { fontSize: "13px", color: "#4b5563", margin: "6px 0 0", fontStyle: "italic", lineHeight: 1.5 },
+  compatBarWrap: { marginTop: "4px" },
   compatBarBg: { height: "6px", background: "#f3f4f6", borderRadius: "3px", overflow: "hidden" },
   compatBarFill: { height: "100%", borderRadius: "3px", transition: "width 0.6s ease" },
-  sharedTagsWrap: { borderTop: "1px solid #f3f4f6", paddingTop: "12px" },
+  sharedTagsWrap: { borderTop: "1px solid #f3f4f6", paddingTop: "10px" },
   sharedTagsTitle: { fontSize: "11px", fontWeight: 800, color: "#9ca3af", margin: "0 0 8px", letterSpacing: "0.06em" },
   sharedTags: { display: "flex", flexWrap: "wrap", gap: "6px" },
   sharedTag: { background: "#f0fdf4", color: "#16a34a", border: "1px solid #bbf7d0", padding: "3px 10px", borderRadius: "20px", fontSize: "12px", fontWeight: 600 },
@@ -1573,29 +1563,6 @@ const RM = {
   emptyTitle: { fontSize: "18px", fontWeight: 800, color: "#111827", margin: "0 0 8px" },
   emptySub: { fontSize: "14px", color: "#9ca3af", lineHeight: 1.7, margin: "0 0 24px", maxWidth: "400px", marginLeft: "auto", marginRight: "auto" },
   centered: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "80px 20px", gap: "16px", textAlign: "center" },
-  primaryBtn: { padding: "12px 24px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 700, fontSize: "15px", cursor: "pointer" },
-  secondaryBtn: { padding: "11px 22px", borderRadius: "12px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "14px", cursor: "pointer" },
-  backBtn: { alignSelf: "flex-start", padding: "9px 18px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", color: "#7c3aed", fontWeight: 700, fontSize: "14px", cursor: "pointer" },
-  browseHeader: { marginBottom: "4px" },
-  browseTitle: { fontSize: "17px", fontWeight: 800, color: "#111827", margin: "0 0 4px" },
-  browseSub: { fontSize: "13px", color: "#9ca3af", margin: 0 },
-  browseGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: "20px",
-  },  
-  browseCard: { background: "white", borderRadius: "14px", border: "1px solid #e5e7eb", overflow: "hidden", boxShadow: "0 2px 10px rgba(0,0,0,0.04)" },
-  browseImgWrap: { position: "relative", height: "160px" },
-  browseImg: { width: "100%", height: "100%", objectFit: "cover" },
-  availableBadge: { position: "absolute", top: "10px", right: "10px", background: "#16a34a", color: "white", padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700 },
-  browseBody: { padding: "14px 16px" },
-  browseCardTitle: { fontSize: "15px", fontWeight: 800, color: "#111827", margin: "0 0 4px" },
-  browseAddress: { fontSize: "12px", color: "#6b7280", margin: "0 0 12px" },
-  browseFooter: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  browsePrice: { fontSize: "20px", fontWeight: 900, color: "#7c3aed" },
-  browsePriceSub: { fontSize: "12px", color: "#9ca3af", fontWeight: 400 },
-  ratingChip: { background: "#fef3c7", color: "#d97706", padding: "3px 8px", borderRadius: "8px", fontSize: "12px", fontWeight: 700 },
-  roomsChip: { background: "#ede9fe", color: "#7c3aed", padding: "3px 8px", borderRadius: "8px", fontSize: "12px", fontWeight: 700 },
   spinner: { width: "32px", height: "32px", border: "3px solid #ede9fe", borderTop: "3px solid #7c3aed", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
 };
 
@@ -1650,107 +1617,6 @@ const PS = {
   confirmDeleteBtn: { flex: 2, padding: "11px", borderRadius: "10px", border: "none", background: "#dc2626", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer" },
   loadingWrap: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "400px", gap: "16px" },
   spinner: { width: "32px", height: "32px", border: "3px solid #ede9fe", borderTop: "3px solid #7c3aed", borderRadius: "50%", animation: "spin 0.8s linear infinite" },
-
-  matchSuggestionGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-    gap: "12px",
-    marginBottom: "16px",
-  },
-
-  matchSuggestionCard: {
-    border: "1.5px solid #e5e7eb",
-    borderRadius: "14px",
-    padding: "14px",
-    background: "white",
-    textAlign: "left",
-    cursor: "pointer",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-
-  matchSuggestionCardSelected: {
-    border: "2px solid #7c3aed",
-    background: "#faf5ff",
-    boxShadow: "0 0 0 3px rgba(124,58,237,0.08)",
-  },
-
-  matchSuggestionTop: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "8px",
-  },
-
-  matchSuggestionAvatar: {
-    width: "42px",
-    height: "42px",
-    borderRadius: "50%",
-    background: "#ede9fe",
-    color: "#7c3aed",
-    fontWeight: 800,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "16px",
-  },
-
-  matchSuggestionScore: {
-    padding: "6px 10px",
-    borderRadius: "999px",
-    fontSize: "11px",
-    fontWeight: 800,
-    whiteSpace: "nowrap",
-  },
-
-  matchSuggestionName: {
-    margin: 0,
-    fontSize: "15px",
-    fontWeight: 800,
-    color: "#111827",
-  },
-
-  matchSuggestionSub: {
-    margin: 0,
-    fontSize: "13px",
-    color: "#6b7280",
-  },
-
-  matchSuggestionRoom: {
-    margin: 0,
-    fontSize: "13px",
-    color: "#16a34a",
-    fontWeight: 700,
-  },
-
-  matchSuggestionTags: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
-  },
-
-  matchSuggestionTag: {
-    fontSize: "11px",
-    fontWeight: 700,
-    padding: "6px 8px",
-    borderRadius: "999px",
-    background: "#f3f4f6",
-    color: "#4b5563",
-  },
-
-  orDivider: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "16px 0",
-    fontSize: "12px",
-    fontWeight: 800,
-    color: "#9ca3af",
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-  },
 };
-
 
 export default StudentDashboard;

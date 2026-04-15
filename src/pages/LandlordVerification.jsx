@@ -378,7 +378,7 @@ export function VerificationReview() {
   useEffect(() => { fetchAll(); }, []);
 
   const fetchAll = async () => {
-    const { data: pend, error: e1 } = await supabase
+    const { data: pend} = await supabase
       .from("landlord_verifications")
       .select("*")
       .eq("status", "pending");
@@ -393,7 +393,6 @@ export function VerificationReview() {
       .select("*")
       .eq("status", "rejected");
 
-    console.log("pend error:", e1); // remove after confirmed working
 
     // Enrich each record with profile info + fresh signed URLs
     const freshen = async (list) => Promise.all((list || []).map(async (l) => {
@@ -411,10 +410,9 @@ export function VerificationReview() {
           ? decodeURIComponent(path.split("/verification-docs/")[1]?.split("?")[0] || "")
           : path;
         if (!cleanPath) return null;
-        const { data, error } = await supabase.storage
+        const { data } = await supabase.storage
           .from("verification-docs")
           .createSignedUrl(cleanPath, 7200);
-        console.log("signed url result:", cleanPath, data?.signedUrl, error); // remove after fix
         return data?.signedUrl || null;
       };
 
