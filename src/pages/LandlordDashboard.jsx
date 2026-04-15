@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
-import { StatCard, sharedStyles as S, ResponsiveSidebar } from "../components/DashboardShared";
+import { StatCard, sharedStyles as S } from "../components/DashboardShared";
 import LandlordVerification from "../pages/LandlordVerification";
 
 function LandlordDashboard({ user }) {
   const [properties,   setProperties]   = useState([]);
   const [requests,     setRequests]     = useState([]);
-
+  const [editingId,    setEditingId]    = useState(null);
+  const [editTitle,    setEditTitle]    = useState("");
+  const [editPrice,    setEditPrice]    = useState("");
   const [imageIndexes, setImageIndexes] = useState({});
   const [activeTab,    setActiveTab]    = useState("properties");
   const navigate = useNavigate();
@@ -39,18 +41,11 @@ function LandlordDashboard({ user }) {
     setProperties(prev => prev.filter(p => p.id !== id));
   };
 
-  const resubmitProperty = async (id) => {
-    await supabase.from("properties").update({
-      rejection_reason: null,
-      is_approved: false,
-      reviewed_at: null,
-      admin_notes: null,
-    }).eq("id", id);
-    setProperties(prev => prev.map(p =>
-      p.id === id ? { ...p, rejection_reason: null, is_approved: false } : p
-    ));
+  const saveEdit = async (id) => {
+    await supabase.from("properties").update({ title: editTitle, price: editPrice }).eq("id", id);
+    setProperties(prev => prev.map(p => p.id === id ? { ...p, title: editTitle, price: editPrice } : p));
+    setEditingId(null);
   };
-
 
   const updateRequestStatus = async (reqId, status) => {
     await supabase.from("booking_requests").update({ status }).eq("id", reqId);
@@ -125,26 +120,24 @@ function LandlordDashboard({ user }) {
 
   return (
     <div style={S.pageWrap}>
-      <ResponsiveSidebar>
+      <aside style={S.sidebar}>
         <div style={S.sidebarLogo}><span style={S.logoIcon}>🏠</span><span style={S.logoText}>UniCrib</span></div>
         <nav style={S.navMenu}>
-          <button style={{ ...S.navItem, marginTop: "8px", border: "2px solid #7c3aed", color: "#7c3aed", borderRadius: "10px", fontWeight: 700 }} onClick={() => navigate("/add-property")}>
-            <span style={S.navIcon}>➕</span> Add Property
-          </button>
-
           {[{ key: "properties", icon: "🏠", label: "My Properties" },
             { key: "requests", icon: "📋", label: "Booking Requests" },
-            { key: "verify", icon: "🛡", label: "Verify Identity" },
-            { key: "profile",    icon: "👤", label: "My Profile" },
+            { key: "verify", icon: "🛡", label: "Verify Identity" }
           ].map(({ key, icon, label }) => (
             <button key={key} style={activeTab === key ? S.navItemActive : S.navItem} onClick={() => setActiveTab(key)}>
               <span style={S.navIcon}>{icon}</span>{label}
             </button>
           ))}
+          <button style={{ ...S.navItem, marginTop: "8px", border: "2px solid #7c3aed", color: "#7c3aed", borderRadius: "10px", fontWeight: 700 }} onClick={() => navigate("/add-property")}>
+            <span style={S.navIcon}>➕</span> Add Property
+          </button>
           
         </nav>
         <button style={S.logoutBtn} onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>🚪 Logout</button>
-      </ResponsiveSidebar>
+      </aside>
 
       <main style={S.main}>
         <div style={S.headerBanner}>
@@ -180,39 +173,25 @@ function LandlordDashboard({ user }) {
                         <span style={property.is_full ? S.overlayBadgeRed : S.overlayBadgeGreen}>{property.is_full ? "FULL" : "AVAILABLE"}</span>
                       </div>
                     )}
-                    <div style={{ padding: "12px" }}>
-                      <h4 style={{ margin: "0 0 4px" }}>{property.title}</h4>
-                      <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 4px" }}>${property.price}/mo</p>
-                      {property.is_approved ? (
-                        <p style={{ fontSize: "13px", color: "#16a34a", margin: 0 }}>✅ Approved</p>
-                      ) : property.rejection_reason ? (
-                        <div style={{ marginTop: "6px" }}>
-                          <p style={{ fontSize: "13px", color: "#dc2626", fontWeight: 700, margin: "0 0 4px" }}>❌ Property Rejected</p>
-                          <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", fontSize: "12px", color: "#7f1d1d", lineHeight: 1.5 }}>
-                            <strong>Reason:</strong> {property.rejection_reason}
-                          </div>
-                        </div>
-                      ) : (
-                        <p style={{ fontSize: "13px", color: "#f59e0b", margin: 0 }}>⏳ Pending Approval</p>
-                      )}
-                    </div>
-                    <div style={{ ...S.actionRow, padding: "0 12px 12px", flexWrap: "wrap", gap: "6px" }}>
-                      {property.rejection_reason ? (
-                        <>
-                          <button style={S.editBtn} onClick={() => navigate("/add-property", { state: { property: property } })}>✏️ Edit</button>
-                          <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
-                          <button
-                            style={{ flex: 2, padding: "8px", borderRadius: "8px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 700, cursor: "pointer", fontSize: "13px" }}
-                            onClick={() => resubmitProperty(property.id)}
-                          >🔄 Resubmit</button>
-                        </>
-                      ) : (
-                        <>
-                          <button style={S.editBtn} onClick={() => navigate("/add-property", { state: { property: property } })}>✏️ Edit</button>
-                          <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
-                          <button style={S.toggleBtn} onClick={() => toggleFull(property)}>{property.is_full ? "Mark Available" : "Mark Full"}</button>
-                        </>
-                      )}
+                    {editingId === property.id ? (
+                      <div style={{ padding: "12px" }}>
+                        <input style={S.filterInput} value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Title" />
+                        <input style={{ ...S.filterInput, marginTop: "8px" }} value={editPrice} onChange={e => setEditPrice(e.target.value)} placeholder="Price" />
+                        <button style={{ ...S.primaryBtn, marginTop: "8px" }} onClick={() => saveEdit(property.id)}>Save</button>
+                      </div>
+                    ) : (
+                      <div style={{ padding: "12px" }}>
+                        <h4 style={{ margin: "0 0 4px" }}>{property.title}</h4>
+                        <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 4px" }}>${property.price}/mo</p>
+                        <p style={{ fontSize: "13px", color: property.is_approved ? "#16a34a" : "#f59e0b", margin: 0 }}>
+                          {property.is_approved ? "✅ Approved" : "⏳ Pending Approval"}
+                        </p>
+                      </div>
+                    )}
+                    <div style={{ ...S.actionRow, padding: "0 12px 12px" }}>
+                      <button style={S.editBtn} onClick={() => { setEditingId(property.id); setEditTitle(property.title); setEditPrice(property.price); }}>Edit</button>
+                      <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
+                      <button style={S.toggleBtn} onClick={() => toggleFull(property)}>{property.is_full ? "Mark Available" : "Mark Full"}</button>
                     </div>
                   </div>
                 ))}
@@ -223,8 +202,6 @@ function LandlordDashboard({ user }) {
           {activeTab === "verify" && (
             <LandlordVerification onVerified={(status) => console.log("Status:", status)} />
           )}
-
-          {activeTab === "profile" && <LandlordProfile />}
 
           {activeTab === "requests" && (
             <div style={S.section}>
@@ -244,7 +221,7 @@ function LandlordDashboard({ user }) {
                     </span>
                   </div>
                   {req.status === "pending" && (
-                    <div style={{ display: "flex", gap: "8px" }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                       <button style={S.acceptBtn} onClick={() => updateRequestStatus(req.id, "approved")}>Accept</button>
                       <button style={S.rejectBtn} onClick={() => updateRequestStatus(req.id, "rejected")}>Reject</button>
                     </div>
@@ -255,244 +232,179 @@ function LandlordDashboard({ user }) {
           )}
         </div>
       </main>
+
+      <ContactHelp />
     </div>
   );
 }
 
-function LandlordProfile() {
-  const navigate = useNavigate();
-  const [loading,   setLoading]   = useState(true);
-  const [saving,    setSaving]    = useState(false);
-  const [deleting,  setDeleting]  = useState(false);
-  const [saveMsg,   setSaveMsg]   = useState("");
-  const [error,     setError]     = useState("");
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteInput,       setDeleteInput]       = useState("");
+export function ContactHelp() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("");
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const [fullName,          setFullName]          = useState("");
-  const [phone,             setPhone]             = useState("");
-  const [whatsapp,          setWhatsapp]          = useState("");
-  const [gender,            setGender]            = useState("");
-  const [company,           setCompany]           = useState("");
-  const [area,              setArea]              = useState("");
-  const [bio,               setBio]               = useState("");
+  const handleSend = async () => {
+    if (!message.trim()) return;
+    setSending(true);
 
-  useEffect(() => {
-    const fetch = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("user_profiles")
-        .select("full_name, phone, gender, landlord_whatsapp, landlord_company, landlord_area, bio")
-        .eq("id", user.id)
-        .single();
-      if (data) {
-        setFullName(data.full_name || "");
-        setPhone(data.phone || "");
-        setWhatsapp(data.landlord_whatsapp || "");
-        setGender(data.gender || "");
-        setCompany(data.landlord_company || "");
-        setArea(data.landlord_area || "");
-        setBio(data.bio || "");
-      }
-      setLoading(false);
-    };
-    fetch();
-  }, []);
-
-  const handleSave = async () => {
-    if (!fullName.trim()) { setError("Full name is required."); return; }
-    setSaving(true); setError(""); setSaveMsg("");
     const { data: { user } } = await supabase.auth.getUser();
-    const { error: err } = await supabase.from("user_profiles").update({
-      full_name:          fullName.trim(),
-      phone:              phone.trim()   || null,
-      gender:             gender         || null,
-      landlord_whatsapp:  whatsapp.trim()|| null,
-      landlord_company:   company.trim() || null,
-      landlord_area:      area.trim()    || null,
-      bio:                bio.trim()     || null,
-    }).eq("id", user.id);
-    if (err) { setError(err.message); }
-    else { setSaveMsg("Profile updated!"); setTimeout(() => setSaveMsg(""), 3000); }
-    setSaving(false);
-  };
 
-  const handleDelete = async () => {
-    if (deleteInput !== "DELETE") { setError("Type DELETE to confirm."); return; }
-    setDeleting(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    await supabase.from("properties").delete().eq("user_id", user.id);
-    await supabase.from("user_profiles").delete().eq("id", user.id);
-    await supabase.auth.signOut();
-    navigate("/");
-  };
+    const { error } = await supabase.from("contact_messages").insert([{
+      user_id: user?.id || null,
+      name: name.trim() || "Anonymous",
+      message: message.trim(),
+      created_at: new Date().toISOString(),
+    }]);
 
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "300px", gap: "12px" }}>
-      <div style={{ width: "28px", height: "28px", border: "3px solid #ede9fe", borderTop: "3px solid #7c3aed", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-      <p style={{ color: "#7c3aed", fontWeight: 600 }}>Loading profile…</p>
-    </div>
-  );
+    if (error) {
+      alert("Failed to send message. Please contact us directly.");
+    } else {
+      setSent(true);
+      setTimeout(() => {
+        setSent(false);
+        setMessage("");
+        setName("");
+        setOpen(false);
+      }, 3000);
+    }
 
-  const F = ({ label, children }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-      <label style={{ fontSize: "13px", fontWeight: 700, color: "#374151" }}>{label}</label>
-      {children}
-    </div>
-  );
-
-  const input = {
-    padding: "11px 14px", borderRadius: "10px", border: "1.5px solid #e5e7eb",
-    fontSize: "14px", outline: "none", width: "100%", boxSizing: "border-box",
-    fontFamily: "inherit", color: "#111827", background: "white",
+    setSending(false);
   };
 
   return (
     <>
-      <style>{`
-        @media (max-width: 480px) {
-          .lp-hero-avatar {
-            width: 52px !important;
-            height: 52px !important;
-            fontSize: 20px !important;
-          }
-          .lp-hero-name {
-            font-size: 17px !important;
-          }
-          .lp-save-btn {
-            font-size: 14px !important;
-          }
-          .lp-delete-confirm {
-            flex-direction: column !important;
-          }
-          .lp-delete-confirm button {
-            flex: unset !important;
-            width: 100% !important;
-          }
-        }
-      `}</style>
-    
-      <div style={{ padding: "clamp(12px, 4vw, 32px) clamp(12px, 4vw, 32px) 40px", maxWidth: "640px", width: "100%", boxSizing: "border-box" }}>
+      {/* Floating button */}
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          position: "fixed", bottom: "24px", right: "24px", zIndex: 1000,
+          width: "52px", height: "52px", borderRadius: "50%",
+          background: "linear-gradient(135deg,#7c3aed,#4f46e5)",
+          border: "none", cursor: "pointer", boxShadow: "0 4px 20px rgba(124,58,237,0.4)",
+          fontSize: "22px", display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "transform 0.2s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        title="Help & Contact"
+      >
+        💬
+      </button>
 
-        {/* ── HERO ── */}
-        <div style={{ background: "linear-gradient(135deg,#7c3aed,#4f46e5)", borderRadius: "16px", padding: "clamp(16px, 4vw, 28px)", marginBottom: "20px", marginTop: "8px"}}>
-          <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px, 3vw, 18px)", flexWrap: "wrap" }}>
-            <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: "rgba(255,255,255,0.25)", border: "3px solid rgba(255,255,255,0.5)", color: "white", fontSize: "26px", fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {fullName?.charAt(0)?.toUpperCase() || "?"}
-            </div>
-            <div>
-              <h2 className="lp-hero-name" style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 900, color: "white" }}>{fullName || "Your Name"}</h2>
-              <p style={{ margin: "0 0 2px", fontSize: "13px", color: "rgba(255,255,255,0.8)" }}>{company || "Individual landlord"}</p>
-              <p style={{ margin: 0, fontSize: "13px", color: "rgba(255,255,255,0.65)" }}>{area || "Area not set"}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── PERSONAL ── */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "clamp(16px, 4vw, 24px)", marginBottom: "20px" }}>
-          <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 800, color: "#111827" }}>👤 Personal Details</h3>
-          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9ca3af" }}>Visible to students and admins when reviewing your listings.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <F label="Full Name *">
-              <input style={input} value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Tinashe Moyo" />
-            </F>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "14px" }}>
-              <F label="Phone Number">
-                <input style={input} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+263 77…" />
-              </F>
-              <F label="WhatsApp Number">
-                <input style={input} value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="+263 77…" />
-              </F>
-            </div>
-            <F label="Gender">
-              <select style={input} value={gender} onChange={e => setGender(e.target.value)}>
-                <option value="">Select…</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-                <option value="prefer_not">Prefer not to say</option>
-              </select>
-            </F>
-          </div>
-        </div>
-
-        {/* ── BUSINESS ── */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1px solid #e5e7eb", padding: "clamp(16px, 4vw, 24px)", marginBottom: "20px" }}>
-          <h3 style={{ margin: "0 0 4px", fontSize: "16px", fontWeight: 800, color: "#111827" }}>🏢 Business Details</h3>
-          <p style={{ margin: "0 0 20px", fontSize: "13px", color: "#9ca3af" }}>Helps students know who they're renting from.</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <F label="Company / Trading Name">
-              <input style={input} value={company} onChange={e => setCompany(e.target.value)} placeholder="e.g. Brightlight Properties" />
-            </F>
-            <F label="Operating Area">
-              <input style={input} value={area} onChange={e => setArea(e.target.value)} placeholder="e.g. Belvedere, Harare" />
-            </F>
-            <F label="Bio / About">
-              <textarea style={{ ...input, minHeight: "90px", resize: "vertical" }} value={bio} onChange={e => setBio(e.target.value)} placeholder="Tell students a bit about yourself or your properties…" />
-            </F>
-          </div>
-        </div>
-
-        {/* ── MESSAGES ── */}
-        {error   && <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "10px", padding: "12px 16px", color: "#dc2626", fontSize: "14px", marginBottom: "16px" }}>⚠ {error}</div>}
-        {saveMsg && <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px 16px", color: "#16a34a", fontSize: "14px", marginBottom: "16px" }}>✅ {saveMsg}</div>}
-
-        {/* ── SAVE ── */}
-        <button
-          className="lp-save-btn"
-          style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: "linear-gradient(135deg,#7c3aed,#4f46e5)", color: "white", fontWeight: 800, fontSize: "15px", cursor: "pointer", marginBottom: "32px", opacity: saving ? 0.65 : 1 }}
-          onClick={handleSave}
-          disabled={saving}
+      {/* Modal */}
+      {open && (
+        <div
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
+            zIndex: 2000, display: "flex", alignItems: "flex-end",
+            justifyContent: "flex-end", padding: "24px",
+          }}
+          onClick={() => setOpen(false)}
         >
-          {saving ? "Saving…" : "💾 Save Changes"}
-        </button>
-
-        {/* ── DANGER ZONE ── */}
-        <div style={{ background: "white", borderRadius: "16px", border: "1.5px solid #fecaca", padding: "clamp(16px, 4vw, 24px)" }}>
-          <h3 style={{ margin: "0 0 6px", fontSize: "16px", fontWeight: 800, color: "#dc2626" }}>⚠️ Danger Zone</h3>
-          <p style={{ margin: "0 0 18px", fontSize: "14px", color: "#6b7280", lineHeight: 1.6 }}>
-            Deleting your account permanently removes your profile and all your property listings. This cannot be undone.
-          </p>
-          {!showDeleteConfirm ? (
-            <button
-              style={{ padding: "11px 24px", borderRadius: "10px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
-              onClick={() => setShowDeleteConfirm(true)}
-            >
-              🗑 Delete My Account
-            </button>
-          ) : (
-            <div style={{ background: "#fef2f2", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              <p style={{ margin: 0, fontSize: "14px", color: "#374151", lineHeight: 1.6 }}>
-                Type <strong>DELETE</strong> to permanently delete your account and all listings.
-              </p>
-              <input
-                style={{ ...input, border: "1.5px solid #fecaca" }}
-                placeholder="Type DELETE here"
-                value={deleteInput}
-                onChange={e => { setDeleteInput(e.target.value); setError(""); }}
-              />
-              {error && <p style={{ margin: 0, fontSize: "13px", color: "#dc2626", fontWeight: 600 }}>⚠ {error}</p>}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  style={{ flex: 1, padding: "11px", borderRadius: "10px", border: "1.5px solid #e5e7eb", background: "white", color: "#374151", fontWeight: 700, fontSize: "14px", cursor: "pointer" }}
-                  onClick={() => { setShowDeleteConfirm(false); setDeleteInput(""); setError(""); }}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="lp-delete-confirm"
-                  style={{ flex: 2, padding: "11px", borderRadius: "10px", border: "none", background: "#dc2626", color: "white", fontWeight: 800, fontSize: "14px", cursor: "pointer", opacity: deleting ? 0.6 : 1 }}
-                  onClick={handleDelete}
-                  disabled={deleting}
-                >
-                  {deleting ? "Deleting…" : "Yes, Delete Everything"}
-                </button>
+          <div
+            style={{
+              background: "white", borderRadius: "20px", padding: "28px",
+              width: "100%", maxWidth: "380px",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.15)",
+              display: "flex", flexDirection: "column", gap: "16px",
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <h3 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: 900, color: "#111827" }}>
+                  💬 Help & Contact
+                </h3>
+                <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af" }}>
+                  We usually respond within a few hours
+                </p>
               </div>
+              <button
+                onClick={() => setOpen(false)}
+                style={{ background: "none", border: "none", fontSize: "18px", cursor: "pointer", color: "#9ca3af", padding: "0" }}
+              >✕</button>
             </div>
-          )}
+
+            {/* Direct contact info */}
+            <div style={{
+              background: "#f5f3ff", borderRadius: "12px", padding: "14px 16px",
+              display: "flex", flexDirection: "column", gap: "8px",
+            }}>
+              <p style={{ margin: 0, fontSize: "12px", fontWeight: 800, color: "#7c3aed", letterSpacing: "0.06em" }}>
+                REACH US DIRECTLY
+              </p>
+              
+                <a href="tel:+263786206633"
+                style={{ display: "flex", alignItems: "center", gap: "8px", color: "#111827", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>
+
+                📞 +263 78 620 6633
+              </a>
+              <a href="mailto:kinglevchanda@gmail.com" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7c3aed", textDecoration: "none", fontSize: "14px", fontWeight: 600, wordBreak: "break-all" }}>
+
+                ✉️ kinglevchanda@gmail.com
+              </a>
+            </div>
+
+            {/* In-app message form */}
+            {!sent ? (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <p style={{ margin: 0, fontSize: "12px", fontWeight: 800, color: "#9ca3af", letterSpacing: "0.06em" }}>
+                    OR SEND A MESSAGE
+                  </p>
+                  <input
+                    style={{
+                      padding: "10px 14px", borderRadius: "10px",
+                      border: "1.5px solid #e5e7eb", fontSize: "14px",
+                      outline: "none", fontFamily: "inherit",
+                    }}
+                    placeholder="Your name (optional)"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                  />
+                  <textarea
+                    style={{
+                      padding: "10px 14px", borderRadius: "10px",
+                      border: "1.5px solid #e5e7eb", fontSize: "14px",
+                      outline: "none", fontFamily: "inherit",
+                      minHeight: "100px", resize: "vertical",
+                    }}
+                    placeholder="Describe your issue or question…"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={handleSend}
+                  disabled={sending || !message.trim()}
+                  style={{
+                    padding: "12px", borderRadius: "12px", border: "none",
+                    background: message.trim()
+                      ? "linear-gradient(135deg,#7c3aed,#4f46e5)"
+                      : "#e5e7eb",
+                    color: message.trim() ? "white" : "#9ca3af",
+                    fontWeight: 800, fontSize: "15px", cursor: message.trim() ? "pointer" : "not-allowed",
+                  }}
+                >
+                  {sending ? "Sending…" : "Send Message 🚀"}
+                </button>
+              </>
+            ) : (
+              <div style={{
+                textAlign: "center", padding: "24px 0",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
+              }}>
+                <span style={{ fontSize: "40px" }}>✅</span>
+                <p style={{ margin: 0, fontWeight: 800, color: "#111827", fontSize: "16px" }}>Message sent!</p>
+                <p style={{ margin: 0, fontSize: "13px", color: "#9ca3af" }}>We'll get back to you soon.</p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

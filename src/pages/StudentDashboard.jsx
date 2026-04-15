@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { StatCard, EmptyState, sharedStyles as S, ResponsiveSidebar } from "../components/DashboardShared";
+import { ContactHelp } from "./LandlordDashboard";
 
 const SLEEP_LABELS = {
   early_bird: "Early bird",
@@ -917,6 +918,7 @@ function StudentDashboard({ user: propUser }) {
           </div>
         </div>
       )}
+      <ContactHelp/>
     </div>
   );
 }
