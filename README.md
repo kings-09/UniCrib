@@ -3,7 +3,7 @@
 
 A student accommodation web application that connects university students with landlords around Harare, providing a scam-free alternative to traditional accommodation agents.
 
-🌐 **Live Demo:** [unicrib.netlify.app](https://unicrib.netlify.app)
+🌐 **Live Demo:** [unicrib11.netlify.app](https://unicrib11.netlify.app)
 
 ---
 
