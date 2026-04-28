@@ -12,6 +12,7 @@ function LandlordDashboard({ user }) {
   const [editPrice,    setEditPrice]    = useState("");
   const [imageIndexes, setImageIndexes] = useState({});
   const [activeTab,    setActiveTab]    = useState("properties");
+  const [sidebarOpen,  setSidebarOpen]  = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -118,123 +119,263 @@ function LandlordDashboard({ user }) {
   const nextImg = (id, total) => setImageIndexes(p => ({ ...p, [id]: ((p[id] || 0) + 1) % total }));
   const prevImg = (id, total) => setImageIndexes(p => ({ ...p, [id]: (p[id] || 0) === 0 ? total - 1 : p[id] - 1 }));
 
+  // Close sidebar when a tab is selected on mobile
+  const handleTabChange = (key) => {
+    setActiveTab(key);
+    setSidebarOpen(false);
+  };
+
   return (
-    <div style={S.pageWrap}>
-      <aside style={S.sidebar}>
-        <div style={S.sidebarLogo}><span style={S.logoIcon}>🏠</span><span style={S.logoText}>UniCrib</span></div>
-        <nav style={S.navMenu}>
-          {[{ key: "properties", icon: "🏠", label: "My Properties" },
-            { key: "requests", icon: "📋", label: "Booking Requests" },
-            { key: "verify", icon: "🛡", label: "Verify Identity" }
-          ].map(({ key, icon, label }) => (
-            <button key={key} style={activeTab === key ? S.navItemActive : S.navItem} onClick={() => setActiveTab(key)}>
-              <span style={S.navIcon}>{icon}</span>{label}
+    <>
+      <style>{`
+        /* ── Responsive sidebar styles ── */
+        .ll-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.45);
+          z-index: 200;
+        }
+        .ll-hamburger {
+          display: none;
+        }
+        .ll-mobile-header {
+          display: none;
+        }
+
+        @media (max-width: 768px) {
+          .ll-sidebar {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            height: 100vh !important;
+            z-index: 300;
+            transform: translateX(-100%);
+            transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+            box-shadow: 4px 0 24px rgba(124,58,237,0.18);
+          }
+          .ll-sidebar.open {
+            transform: translateX(0);
+          }
+          .ll-overlay.visible {
+            display: block;
+          }
+          .ll-hamburger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            flex-shrink: 0;
+          }
+          .ll-mobile-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #7c3aed, #4f46e5);
+            padding: 14px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+          }
+          .ll-mobile-header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+          }
+          .ll-mobile-header p {
+            margin: 0;
+            font-size: 12px;
+            color: rgba(255,255,255,0.8);
+          }
+          /* Hide the desktop header banner on mobile since we have mobile header */
+          .ll-desktop-header {
+            display: none;
+          }
+          .ll-main {
+            padding-left: 0 !important;
+          }
+        }
+
+        @media (min-width: 769px) {
+          .ll-sidebar {
+            position: relative !important;
+            transform: none !important;
+          }
+          .ll-desktop-header {
+            display: block;
+          }
+        }
+      `}</style>
+
+      <div style={S.pageWrap}>
+        {/* Overlay for mobile */}
+        <div
+          className={`ll-overlay${sidebarOpen ? " visible" : ""}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+
+        {/* Sidebar */}
+        <aside className={`ll-sidebar${sidebarOpen ? " open" : ""}`} style={S.sidebar}>
+          <div style={S.sidebarLogo}>
+            <span style={S.logoIcon}>🏠</span>
+            <span style={S.logoText}>UniCrib</span>
+          </div>
+          <nav style={S.navMenu}>
+            {[
+              { key: "properties", icon: "🏠", label: "My Properties" },
+              { key: "requests",   icon: "📋", label: "Booking Requests" },
+              { key: "verify",     icon: "🛡",  label: "Verify Identity" },
+            ].map(({ key, icon, label }) => (
+              <button
+                key={key}
+                style={activeTab === key ? S.navItemActive : S.navItem}
+                onClick={() => handleTabChange(key)}
+              >
+                <span style={S.navIcon}>{icon}</span>{label}
+              </button>
+            ))}
+            <button
+              style={{
+                ...S.navItem,
+                marginTop: "8px",
+                border: "2px solid #7c3aed",
+                color: "#7c3aed",
+                borderRadius: "10px",
+                fontWeight: 700,
+              }}
+              onClick={() => { navigate("/add-property"); setSidebarOpen(false); }}
+            >
+              <span style={S.navIcon}>➕</span> Add Property
             </button>
-          ))}
-          <button style={{ ...S.navItem, marginTop: "8px", border: "2px solid #7c3aed", color: "#7c3aed", borderRadius: "10px", fontWeight: 700 }} onClick={() => navigate("/add-property")}>
-            <span style={S.navIcon}>➕</span> Add Property
+          </nav>
+          <button
+            style={S.logoutBtn}
+            onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}
+          >
+            🚪 Logout
           </button>
-          
-        </nav>
-        <button style={S.logoutBtn} onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}>🚪 Logout</button>
-      </aside>
+        </aside>
 
-      <main style={S.main}>
-        <div style={S.headerBanner}>
-          <div>
-            <h1 style={S.greetingTitle}>Landlord Dashboard 🏠</h1>
-            <p style={S.greetingSub}>Manage your properties and booking requests</p>
-          </div>
-        </div>
-
-        <div style={S.tabContent}>
-          <div style={S.statsGrid}>
-            <StatCard icon="🏠" label="Total Properties"  value={properties.length}                              color="#ede9fe" />
-            <StatCard icon="🔴" label="Full Properties"   value={properties.filter(p => p.is_full).length}      color="#fee2e2" />
-            <StatCard icon="📋" label="Pending Requests"  value={requests.filter(r => r.status === "pending").length} color="#fef3c7" />
-            <StatCard icon="✅" label="Approved"          value={properties.filter(p => p.is_approved).length}  color="#dcfce7" />
+        {/* Main content */}
+        <main className="ll-main" style={S.main}>
+          {/* Mobile header with hamburger */}
+          <div className="ll-mobile-header">
+            <button className="ll-hamburger" onClick={() => setSidebarOpen(true)}>
+              ☰
+            </button>
+            <div>
+              <h1>Landlord Dashboard 🏠</h1>
+              <p>Manage your properties and bookings</p>
+            </div>
           </div>
 
-          {activeTab === "properties" && (
-            <div style={S.section}>
-              <h2 style={S.sectionTitle}>My Properties</h2>
-              <div style={S.propertyGrid}>
-                {properties.map(property => (
-                  <div key={property.id} style={S.card}>
-                    {property.image_urls?.length > 0 && (
-                      <div style={S.imgWrap}>
-                        <img src={property.image_urls[imageIndexes[property.id] || 0]} alt="Property" style={S.cardImg} />
-                        {property.image_urls.length > 1 && (
-                          <>
-                            <button style={S.arrowL} onClick={() => prevImg(property.id, property.image_urls.length)}>◀</button>
-                            <button style={S.arrowR} onClick={() => nextImg(property.id, property.image_urls.length)}>▶</button>
-                          </>
-                        )}
-                        <span style={property.is_full ? S.overlayBadgeRed : S.overlayBadgeGreen}>{property.is_full ? "FULL" : "AVAILABLE"}</span>
+          {/* Desktop header */}
+          <div className="ll-desktop-header" style={S.headerBanner}>
+            <div>
+              <h1 style={S.greetingTitle}>Landlord Dashboard 🏠</h1>
+              <p style={S.greetingSub}>Manage your properties and booking requests</p>
+            </div>
+          </div>
+
+          <div style={S.tabContent}>
+            <div style={S.statsGrid}>
+              <StatCard icon="🏠" label="Total Properties"  value={properties.length}                                    color="#ede9fe" />
+              <StatCard icon="🔴" label="Full Properties"   value={properties.filter(p => p.is_full).length}            color="#fee2e2" />
+              <StatCard icon="📋" label="Pending Requests"  value={requests.filter(r => r.status === "pending").length} color="#fef3c7" />
+              <StatCard icon="✅" label="Approved"          value={properties.filter(p => p.is_approved).length}        color="#dcfce7" />
+            </div>
+
+            {activeTab === "properties" && (
+              <div style={S.section}>
+                <h2 style={S.sectionTitle}>My Properties</h2>
+                <div style={S.propertyGrid}>
+                  {properties.map(property => (
+                    <div key={property.id} style={S.card}>
+                      {property.image_urls?.length > 0 && (
+                        <div style={S.imgWrap}>
+                          <img src={property.image_urls[imageIndexes[property.id] || 0]} alt="Property" style={S.cardImg} />
+                          {property.image_urls.length > 1 && (
+                            <>
+                              <button style={S.arrowL} onClick={() => prevImg(property.id, property.image_urls.length)}>◀</button>
+                              <button style={S.arrowR} onClick={() => nextImg(property.id, property.image_urls.length)}>▶</button>
+                            </>
+                          )}
+                          <span style={property.is_full ? S.overlayBadgeRed : S.overlayBadgeGreen}>
+                            {property.is_full ? "FULL" : "AVAILABLE"}
+                          </span>
+                        </div>
+                      )}
+                      {editingId === property.id ? (
+                        <div style={{ padding: "12px" }}>
+                          <input style={S.filterInput} value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Title" />
+                          <input style={{ ...S.filterInput, marginTop: "8px" }} value={editPrice} onChange={e => setEditPrice(e.target.value)} placeholder="Price" />
+                          <button style={{ ...S.primaryBtn, marginTop: "8px" }} onClick={() => saveEdit(property.id)}>Save</button>
+                        </div>
+                      ) : (
+                        <div style={{ padding: "12px" }}>
+                          <h4 style={{ margin: "0 0 4px" }}>{property.title}</h4>
+                          <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 4px" }}>${property.price}/mo</p>
+                          <p style={{ fontSize: "13px", color: property.is_approved ? "#16a34a" : "#f59e0b", margin: 0 }}>
+                            {property.is_approved ? "✅ Approved" : "⏳ Pending Approval"}
+                          </p>
+                        </div>
+                      )}
+                      <div style={{ ...S.actionRow, padding: "0 12px 12px" }}>
+                        <button style={S.editBtn} onClick={() => { setEditingId(property.id); setEditTitle(property.title); setEditPrice(property.price); }}>Edit</button>
+                        <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
+                        <button style={S.toggleBtn} onClick={() => toggleFull(property)}>{property.is_full ? "Mark Available" : "Mark Full"}</button>
                       </div>
-                    )}
-                    {editingId === property.id ? (
-                      <div style={{ padding: "12px" }}>
-                        <input style={S.filterInput} value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Title" />
-                        <input style={{ ...S.filterInput, marginTop: "8px" }} value={editPrice} onChange={e => setEditPrice(e.target.value)} placeholder="Price" />
-                        <button style={{ ...S.primaryBtn, marginTop: "8px" }} onClick={() => saveEdit(property.id)}>Save</button>
-                      </div>
-                    ) : (
-                      <div style={{ padding: "12px" }}>
-                        <h4 style={{ margin: "0 0 4px" }}>{property.title}</h4>
-                        <p style={{ color: "#7c3aed", fontWeight: 700, margin: "0 0 4px" }}>${property.price}/mo</p>
-                        <p style={{ fontSize: "13px", color: property.is_approved ? "#16a34a" : "#f59e0b", margin: 0 }}>
-                          {property.is_approved ? "✅ Approved" : "⏳ Pending Approval"}
-                        </p>
-                      </div>
-                    )}
-                    <div style={{ ...S.actionRow, padding: "0 12px 12px" }}>
-                      <button style={S.editBtn} onClick={() => { setEditingId(property.id); setEditTitle(property.title); setEditPrice(property.price); }}>Edit</button>
-                      <button style={S.deleteBtn} onClick={() => deleteProperty(property.id)}>Delete</button>
-                      <button style={S.toggleBtn} onClick={() => toggleFull(property)}>{property.is_full ? "Mark Available" : "Mark Full"}</button>
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "verify" && (
+              <LandlordVerification onVerified={(status) => console.log("Status:", status)} />
+            )}
+
+            {activeTab === "requests" && (
+              <div style={S.section}>
+                <h2 style={S.sectionTitle}>Booking Requests</h2>
+                {requests.length === 0 && <p style={{ color: "#9ca3af" }}>No booking requests yet.</p>}
+                {requests.map(req => (
+                  <div key={req.id} style={S.requestCard}>
+                    <div>
+                      <p style={S.requestProp}>
+                        {req.properties?.title}
+                        {req.property_rooms?.room_number && (
+                          <span style={{ color: "#7c3aed", fontWeight: 700 }}> · {req.property_rooms.room_number}</span>
+                        )}
+                      </p>
+                      <span style={req.status === "approved" ? S.badgeGreen : req.status === "rejected" ? S.badgeRed : S.badgeYellow}>
+                        {req.status.toUpperCase()}
+                      </span>
+                    </div>
+                    {req.status === "pending" && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                        <button style={S.acceptBtn} onClick={() => updateRequestStatus(req.id, "approved")}>Accept</button>
+                        <button style={S.rejectBtn} onClick={() => updateRequestStatus(req.id, "rejected")}>Reject</button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        </main>
 
-          {activeTab === "verify" && (
-            <LandlordVerification onVerified={(status) => console.log("Status:", status)} />
-          )}
-
-          {activeTab === "requests" && (
-            <div style={S.section}>
-              <h2 style={S.sectionTitle}>Booking Requests</h2>
-              {requests.length === 0 && <p style={{ color: "#9ca3af" }}>No booking requests yet.</p>}
-              {requests.map(req => (
-                <div key={req.id} style={S.requestCard}>
-                  <div>
-                    <p style={S.requestProp}>
-                      {req.properties?.title}
-                      {req.property_rooms?.room_number && (
-                        <span style={{ color: "#7c3aed", fontWeight: 700 }}> · {req.property_rooms.room_number}</span>
-                      )}
-                    </p>
-                    <span style={req.status === "approved" ? S.badgeGreen : req.status === "rejected" ? S.badgeRed : S.badgeYellow}>
-                      {req.status.toUpperCase()}
-                    </span>
-                  </div>
-                  {req.status === "pending" && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                      <button style={S.acceptBtn} onClick={() => updateRequestStatus(req.id, "approved")}>Accept</button>
-                      <button style={S.rejectBtn} onClick={() => updateRequestStatus(req.id, "rejected")}>Reject</button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-
-      <ContactHelp />
-    </div>
+        <ContactHelp />
+      </div>
+    </>
   );
 }
 
@@ -275,7 +416,6 @@ export function ContactHelp() {
 
   return (
     <>
-      {/* Floating button */}
       <button
         onClick={() => setOpen(true)}
         style={{
@@ -293,7 +433,6 @@ export function ContactHelp() {
         💬
       </button>
 
-      {/* Modal */}
       {open && (
         <div
           style={{
@@ -312,7 +451,6 @@ export function ContactHelp() {
             }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
                 <h3 style={{ margin: "0 0 4px", fontSize: "18px", fontWeight: 900, color: "#111827" }}>
@@ -328,7 +466,6 @@ export function ContactHelp() {
               >✕</button>
             </div>
 
-            {/* Direct contact info */}
             <div style={{
               background: "#f5f3ff", borderRadius: "12px", padding: "14px 16px",
               display: "flex", flexDirection: "column", gap: "8px",
@@ -336,19 +473,15 @@ export function ContactHelp() {
               <p style={{ margin: 0, fontSize: "12px", fontWeight: 800, color: "#7c3aed", letterSpacing: "0.06em" }}>
                 REACH US DIRECTLY
               </p>
-              
-                <a href="tel:+263786206633"
+              <a href="tel:+263786206633"
                 style={{ display: "flex", alignItems: "center", gap: "8px", color: "#111827", textDecoration: "none", fontSize: "14px", fontWeight: 600 }}>
-
                 📞 +263 78 620 6633
               </a>
               <a href="mailto:kinglevchanda@gmail.com" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#7c3aed", textDecoration: "none", fontSize: "14px", fontWeight: 600, wordBreak: "break-all" }}>
-
                 ✉️ kinglevchanda@gmail.com
               </a>
             </div>
 
-            {/* In-app message form */}
             {!sent ? (
               <>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
