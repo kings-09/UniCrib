@@ -49,7 +49,9 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 ## 👨‍💻 Developer
 
 **Kingstone Levy Chandaengerwa**
-- GitHub: [@kings-09](https://github.com/kings-09)
+**Praise-El Kachamakwara**
+
+- GitHub: [@kings-09](https://github.com/kings-09) 
 - Email: kinglevchanda@gmail.com
 
 ---
