@@ -47,13 +47,13 @@ Then open [http://localhost:3000](http://localhost:3000) in your browser.
 ---
 
 ## 👨‍💻 Developer
+### Kingstone Levy Chandaengerwa
+- GitHub: [@kings-09](https://github.com/kings-09)
+- Email: [kinglevchanda@gmail.com](mailto:kinglevchanda@gmail.com)
 
-**Kingstone Levy Chandaengerwa**
-**Praise-El Kachamakwara**
-
-- GitHub: [@kings-09](https://github.com/kings-09) 
-- Email: kinglevchanda@gmail.com
-
+### Praise-El Kachamakwara
+- GitHub: [@Praise-ElKachamakwara](https://github.com/Praise-ElKachamakwara)
+- Email: [praiseelkachaz@gmail.com](mailto:praiseelkachaz@gmail.com)
 ---
 
 ## 📄 License
